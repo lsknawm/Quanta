@@ -1,5 +1,10 @@
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
+// 1. 引入 KaTeX 核心库和自动渲染扩展
+import katex from 'katex'
+import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
+// 2. 引入 KaTeX 样式 (Vite 会自动处理)
+import 'katex/dist/katex.min.css'
 
 const props = defineProps({
   question: {
@@ -13,38 +18,47 @@ const props = defineProps({
 })
 
 const showAnswer = ref(false)
-const cardRef = ref(null)
+// 3. 分离 Ref，避免渲染冲突
+const contentRef = ref(null)
+const answerRef = ref(null)
 
-// 封装渲染函数
-const renderMath = () => {
-  if (window.renderMathInElement && cardRef.value) {
-    window.renderMathInElement(cardRef.value, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', display: false},
-        {left: '\\(', right: '\\)', display: false},
-        {left: '\\[', right: '\\]', display: true}
-      ],
-      throwOnError: false
-    })
+const katexOptions = {
+  delimiters: [
+    {left: '$$', right: '$$', display: true},
+    {left: '$', right: '$', display: false},
+    {left: '\\(', right: '\\)', display: false},
+    {left: '\\[', right: '\\]', display: true}
+  ],
+  throwOnError: false
+}
+
+// 渲染指定区域的函数
+const renderArea = (element) => {
+  if (element) {
+    renderMathInElement(element, katexOptions)
   }
 }
 
-// 组件挂载时渲染一次（针对题目内容）
+// 组件挂载时，只渲染题目部分
 onMounted(() => {
-  renderMath()
+  renderArea(contentRef.value)
 })
 
-// 切换答案时，等待 DOM 更新后重新渲染（针对答案和解析）
+// 切换答案
 const toggleAnswer = async () => {
   showAnswer.value = !showAnswer.value
-  await nextTick()
-  renderMath()
+
+  if (showAnswer.value) {
+    // 等待 Vue 将 v-if 的 DOM 插入文档
+    await nextTick()
+    // 只渲染答案区域，不要重新渲染整个卡片
+    renderArea(answerRef.value)
+  }
 }
 </script>
 
 <template>
-  <div class="question-card" ref="cardRef">
+  <div class="question-card">
     <div class="card-header">
       <div class="meta-left">
         <span class="question-badge">Q{{ index + 1 }}</span>
@@ -55,19 +69,19 @@ const toggleAnswer = async () => {
       <span class="difficulty-text">难度: {{ question.difficulty }}</span>
     </div>
 
-    <div class="question-content">
+    <div class="question-content" ref="contentRef">
       <p v-html="question.content"></p>
-    </div>
 
-    <div v-if="question.type === 'choice'" class="options-list">
-      <div
-        v-for="(option, idx) in question.options"
-        :key="idx"
-        class="option-item"
-        @click="!showAnswer && (selectedOption = idx)"
-      >
-        <span class="option-label">{{ String.fromCharCode(65 + idx) }}.</span>
-        <span class="option-text" v-html="option"></span>
+      <div v-if="question.type === 'choice'" class="options-list">
+        <div
+          v-for="(option, idx) in question.options"
+          :key="idx"
+          class="option-item"
+          @click="!showAnswer && (selectedOption = idx)"
+        >
+          <span class="option-label">{{ String.fromCharCode(65 + idx) }}.</span>
+          <span class="option-text" v-html="option"></span>
+        </div>
       </div>
     </div>
 
@@ -77,7 +91,7 @@ const toggleAnswer = async () => {
       </button>
 
       <transition name="fade">
-        <div v-if="showAnswer" class="answer-panel">
+        <div v-if="showAnswer" class="answer-panel" ref="answerRef">
           <div class="answer-row">
             <span class="label">正确答案：</span>
             <span class="answer-key">{{ question.answer }}</span>
@@ -93,6 +107,7 @@ const toggleAnswer = async () => {
 </template>
 
 <style scoped>
+/* 保持你原有的 Modern SAAS 风格样式不变 */
 .question-card {
   background: #ffffff;
   border: 1px solid #eef0f2;
@@ -138,6 +153,8 @@ const toggleAnswer = async () => {
   background: #f1f5f9;
   color: #475569;
 }
+.difficulty-badge.c { background: #fff7ed; color: #c2410c; }
+.difficulty-badge.d { background: #fef2f2; color: #b91c1c; }
 
 .question-content {
   font-size: 1.05rem;
@@ -227,7 +244,6 @@ const toggleAnswer = async () => {
   font-size: 0.95rem;
 }
 
-/* 简单的淡入淡出动画 */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease;
 }
