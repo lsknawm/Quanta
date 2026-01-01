@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import katex from 'katex'
 import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
 import 'katex/dist/katex.min.css'
-import { VideoPlay, ArrowDown, Check } from '@element-plus/icons-vue' // 引入需要的图标
+// 确保安装了 @element-plus/icons-vue 才能引入这些图标
+import { VideoPlay, ArrowDown, Check, CircleCheck, CircleClose, Promotion } from '@element-plus/icons-vue'
 
 const props = defineProps({
   question: { type: Object, required: true },
@@ -12,8 +13,20 @@ const props = defineProps({
 
 const selectedOption = ref(null)
 const showAnswer = ref(false)
+const hasSubmitted = ref(false)
 const contentRef = ref(null)
 const answerRef = ref(null)
+
+// 计算正确答案的索引 (例如 'C' -> 2)
+// 增加空值保护，防止 question.answer 为空时报错
+const correctIndex = computed(() => {
+  if (!props.question.answer) return -1
+  return props.question.answer.charCodeAt(0) - 65
+})
+
+const isCorrect = computed(() => {
+  return hasSubmitted.value && selectedOption.value === correctIndex.value
+})
 
 const katexOptions = {
   delimiters: [
@@ -33,15 +46,32 @@ onMounted(() => {
   renderArea(contentRef.value)
 })
 
+const submitAnswer = () => {
+  if (selectedOption.value === null) return
+  hasSubmitted.value = true
+
+  // 如果做错，自动展开解析
+  if (!isCorrect.value && !showAnswer.value) {
+    toggleAnswer()
+  }
+}
+
 const toggleAnswer = async () => {
   showAnswer.value = !showAnswer.value
   if (showAnswer.value) {
     await nextTick()
-    renderArea(answerRef.value)
+    // 增加判空，防止 answerRef 未准备好
+    if (answerRef.value) {
+      renderArea(answerRef.value)
+    }
   }
 }
 
-// 难度标签颜色
+const handleOptionClick = (idx) => {
+  if (hasSubmitted.value) return
+  selectedOption.value = idx
+}
+
 const getDiffColor = (diff) => {
   const map = { 'A': 'success', 'B': 'info', 'C': 'warning', 'D': 'danger' }
   return map[diff] || 'info'
@@ -57,6 +87,11 @@ const getDiffColor = (diff) => {
           {{ question.category }} · 难度 {{ question.difficulty }}
         </el-tag>
       </div>
+      <transition name="el-fade-in">
+        <el-tag v-if="hasSubmitted" :type="isCorrect ? 'success' : 'danger'" effect="dark" round>
+          {{ isCorrect ? '回答正确' : '回答错误' }}
+        </el-tag>
+      </transition>
     </div>
 
     <div class="card-body" ref="contentRef">
@@ -67,12 +102,24 @@ const getDiffColor = (diff) => {
           v-for="(option, idx) in question.options"
           :key="idx"
           class="option-item"
-          :class="{ 'is-selected': selectedOption === idx }"
-          @click="selectedOption = idx"
+          :class="{
+            'is-selected': selectedOption === idx && !hasSubmitted,
+            'is-correct-highlight': hasSubmitted && idx === correctIndex,
+            'is-wrong-highlight': hasSubmitted && selectedOption === idx && idx !== correctIndex,
+            'is-disabled': hasSubmitted
+          }"
+          @click="handleOptionClick(idx)"
         >
           <div class="option-marker">
-            <span v-if="selectedOption !== idx">{{ String.fromCharCode(65 + idx) }}</span>
-            <el-icon v-else><Check /></el-icon>
+            <template v-if="hasSubmitted">
+              <el-icon v-if="idx === correctIndex"><CircleCheck /></el-icon>
+              <el-icon v-else-if="selectedOption === idx"><CircleClose /></el-icon>
+              <span v-else>{{ String.fromCharCode(65 + idx) }}</span>
+            </template>
+            <template v-else>
+              <el-icon v-if="selectedOption === idx"><Check /></el-icon>
+              <span v-else>{{ String.fromCharCode(65 + idx) }}</span>
+            </template>
           </div>
           <div class="option-content" v-html="option"></div>
         </div>
@@ -83,13 +130,23 @@ const getDiffColor = (diff) => {
       <el-button
         type="primary"
         size="large"
-        class="action-btn"
-        :plain="showAnswer"
+        class="action-btn submit-btn"
+        :disabled="selectedOption === null || hasSubmitted"
+        @click="submitAnswer"
+      >
+        <el-icon class="el-icon--left"><Promotion /></el-icon>
+        {{ hasSubmitted ? '已提交' : '提交答案' }}
+      </el-button>
+
+      <el-button
+        size="large"
+        class="action-btn toggle-btn"
+        :plain="!showAnswer"
         @click="toggleAnswer"
       >
         <el-icon class="el-icon--left" v-if="!showAnswer"><VideoPlay /></el-icon>
         <el-icon class="el-icon--left" v-else><ArrowDown /></el-icon>
-        {{ showAnswer ? '收起解析' : '查看答案 & 解析' }}
+        {{ showAnswer ? '收起解析' : '查看解析' }}
       </el-button>
     </div>
 
@@ -112,174 +169,70 @@ const getDiffColor = (diff) => {
 </template>
 
 <style scoped>
-/* 卡片主体 */
+/* 基础样式 */
 .card-container {
   background: #fff;
-  border-radius: 16px; /* 更大的圆角 */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Tailwind 风格阴影 */
-  border: 1px solid #f3f4f6; /* 极淡的边框 */
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f3f4f6;
   margin-bottom: 32px;
   overflow: hidden;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
+.card-header { padding: 24px 32px 0; display: flex; justify-content: space-between; align-items: center; }
+.header-main { display: flex; align-items: center; gap: 12px; }
+.question-number { font-family: 'SF Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; }
+.card-body { padding: 20px 32px 32px; }
+.question-text { font-size: 1.1rem; line-height: 1.75; color: #1f2937; margin-bottom: 28px; font-weight: 500; }
 
-.card-container:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  /*Q transform: translateY(-2px); 可选：去掉位移让它稳重一点，或者保留 */
-}
-
-/* 头部 */
-.card-header {
-  padding: 24px 32px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.question-number {
-  font-family: 'SF Mono', monospace;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.diff-tag {
-  font-weight: 600;
-}
-
-/* 内容区 */
-.card-body {
-  padding: 20px 32px 32px;
-}
-
-.question-text {
-  font-size: 1.1rem;
-  line-height: 1.75;
-  color: #1f2937;
-  margin-bottom: 28px;
-  font-weight: 500;
-}
-
-/* 选项列表 */
-.options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
+/* 选项样式 */
+.options-list { display: flex; flex-direction: column; gap: 12px; }
 .option-item {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  border: 2px solid #e5e7eb; /* 默认灰色边框 */
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; align-items: center; padding: 16px 20px;
+  border: 2px solid #e5e7eb; border-radius: 12px;
+  cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   background: #fff;
 }
+.option-item:hover:not(.is-disabled) { border-color: #c7d2fe; background-color: #f9fafb; }
+.option-item.is-disabled { cursor: default; }
 
-.option-item:hover {
-  border-color: #c7d2fe; /* 悬停时浅紫/蓝 */
-  background-color: #f9fafb;
-}
+.option-item.is-selected { border-color: #4f46e5; background-color: #eef2ff; box-shadow: 0 0 0 1px #4f46e5; }
+.option-item.is-selected .option-marker { background: #4f46e5; color: #fff; }
 
-/* 选中状态 */
-.option-item.is-selected {
-  border-color: #4f46e5; /* 品牌主色 */
-  background-color: #eef2ff; /* 极浅的品牌色背景 */
-  box-shadow: 0 0 0 1px #4f46e5; /* 双重边框强化视觉 */
-}
+.option-item.is-correct-highlight { border-color: #10b981; background-color: #ecfdf5; box-shadow: 0 0 0 1px #10b981; }
+.option-item.is-correct-highlight .option-marker { background-color: #10b981; color: #fff; }
+
+.option-item.is-wrong-highlight { border-color: #ef4444; background-color: #fef2f2; box-shadow: 0 0 0 1px #ef4444; opacity: 0.8; }
+.option-item.is-wrong-highlight .option-marker { background-color: #ef4444; color: #fff; }
 
 .option-marker {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f3f4f6;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #f3f4f6; color: #6b7280;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 16px; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
   transition: all 0.2s;
 }
 
-.option-item.is-selected .option-marker {
-  background: #4f46e5;
-  color: #fff;
-}
+/* 按钮区 */
+.card-action { padding: 0 32px 32px; display: flex; gap: 16px; }
+.action-btn { flex: 1; border-radius: 10px; font-weight: 600; height: 48px; font-size: 1rem; }
+.toggle-btn { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+.toggle-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #334155; }
 
-.option-content {
-  color: #374151;
-  font-size: 1rem;
-}
+/* 解析区 */
+.answer-wrapper { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 32px; }
+.answer-header { display: flex; align-items: center; margin-bottom: 16px; }
+.answer-header .label { font-size: 0.9rem; color: #64748b; margin-right: 12px; }
+.answer-header .key { font-size: 1.5rem; font-weight: 800; color: #059669; }
+.inner-divider { margin: 16px 0 24px; border-color: #e2e8f0; }
+.explanation h4 { margin: 0 0 12px; font-size: 0.95rem; color: #1f2937; }
+.exp-html { font-size: 0.95rem; line-height: 1.8; color: #4b5563; }
 
-/* 底部操作区 */
-.card-action {
-  padding: 0 32px 32px;
-}
+:deep(.katex) { font-size: 1.1em; }
 
-.action-btn {
-  width: 100%;
-  border-radius: 10px;
-  font-weight: 600;
-  height: 48px;
-  font-size: 1rem;
-}
-
-/* 答案解析区 */
-.answer-wrapper {
-  background-color: #f8fafc; /* 浅蓝灰色背景 */
-  border-top: 1px solid #e2e8f0;
-  padding: 32px;
-}
-
-.answer-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.answer-header .label {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-right: 12px;
-}
-
-.answer-header .key {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #059669; /* 绿色 */
-}
-
-.inner-divider {
-  margin: 16px 0 24px;
-  border-color: #e2e8f0;
-}
-
-.explanation h4 {
-  margin: 0 0 12px;
-  font-size: 0.95rem;
-  color: #1f2937;
-}
-
-.exp-html {
-  font-size: 0.95rem;
-  line-height: 1.8;
-  color: #4b5563;
-}
-
-:deep(.katex) {
-  font-size: 1.1em;
+@media (max-width: 768px) {
+  .card-header { padding: 20px 20px 0; }
+  .card-body { padding: 16px 20px 24px; }
+  .card-action { padding: 0 20px 24px; flex-direction: column; }
 }
 </style>
