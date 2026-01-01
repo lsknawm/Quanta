@@ -98,7 +98,7 @@
 
 .features {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 响应式调整 */
   gap: 24px;
   max-width: 900px;
   width: 100%;

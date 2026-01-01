@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-// 懒加载 ExamView，提升首屏速度
-const ExamView = () => import('../views/ExamView.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,9 +12,18 @@ const router = createRouter({
     {
       path: '/exam',
       name: 'exam',
-      component: ExamView
+      // 路由懒加载，优化性能
+      component: () => import('../views/ExamView.vue')
     }
-  ]
+  ],
+  // 切换页面时滚动条回到顶部
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
 })
 
 export default router

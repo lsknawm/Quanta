@@ -1,0 +1,39 @@
+[
+  {
+    "id": "0001",
+    "type": "single_choice",
+    "meta": {
+      "chapter": "概率论",
+      "difficulty": "C"
+    },
+
+    // 1. 题干：只有代码，没图片
+    "content": {
+      "text": "下图展示了哪种概率分布？",
+      "code": "import matplotlib.pyplot as plt\nimport numpy as np\nx=np.linspace(-3,3,100)\nplt.plot(x, np.exp(-x**2/2))",
+      "image": null // 待生成
+    },
+
+    // 2. 详细内容
+    "structure": {
+      "layout": "grid",
+      "options": [
+        { "id": "A", "text": "正态分布","code": null,"image": null // 待生成 },
+        { "id": "B", "text": "均匀分布","code":null,"image": null // 待生成 },
+        { "id": "C", "text": "如图所示分布", "code": "import matplotlib.pyplot as plt\nplt.hist([1,1,2,3], bins=3)", // 选项也有代码"image": null // 待生成
+        },
+        { "id": "D", "text": "泊松分布", "code": null, "image": null }// 待生成
+      ]
+    },
+    // 3. 解析：带代码辅助说明
+    "validation": {
+      "answer": "A",
+      "explanation": {
+        "text": "这是标准的钟形曲线，代码如下：",
+        "code": "# 验证代码\nprint('Mean is 0')", // 这里的代码可能不需要生成图片，只是展示给用户看
+        "image": null
+      }
+    },
+    "status": {}
+  }
+]
