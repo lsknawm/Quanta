@@ -1,10 +1,19 @@
 <script setup>
+import { Check, Close } from '@element-plus/icons-vue'
+
 defineProps({
   modelValue: String,
   isSubmitted: Boolean,
-  correctAnswer: String // 仅用于参考，通常简答题通过解析来核对
+  correctAnswer: String,
+  // 新增：接收父组件传下来的自判状态 (null, true, false)
+  selfCorrectStatus: {
+    type: [Boolean, Object], // Object for null
+    default: null
+  }
 })
-const emit = defineEmits(['update:modelValue'])
+
+// 新增：抛出事件给父组件
+const emit = defineEmits(['update:modelValue', 'toggle-correct'])
 </script>
 
 <template>
@@ -21,9 +30,32 @@ const emit = defineEmits(['update:modelValue'])
     />
 
     <div v-if="isSubmitted" class="result-box">
+
+      <div class="self-check-area">
+        <p class="check-tip">请对比参考答案，并标记你的回答是否正确：</p>
+        <div class="check-actions">
+          <el-button
+            :type="selfCorrectStatus === true ? 'success' : 'default'"
+            :plain="selfCorrectStatus !== true"
+            @click="emit('toggle-correct', true)"
+          >
+            <el-icon class="el-icon--left"><Check /></el-icon> 我答对了
+          </el-button>
+
+          <el-button
+            :type="selfCorrectStatus === false ? 'danger' : 'default'"
+            :plain="selfCorrectStatus !== false"
+            @click="emit('toggle-correct', false)"
+          >
+            <el-icon class="el-icon--left"><Close /></el-icon> 我答错了
+          </el-button>
+        </div>
+      </div>
+
+      <el-divider style="margin: 16px 0;" />
+
       <p class="label">参考答案：</p>
       <div class="value">{{ correctAnswer }}</div>
-      <p class="tip">请点击下方“查看解析”核对详细过程。</p>
     </div>
   </div>
 </template>
@@ -41,5 +73,8 @@ const emit = defineEmits(['update:modelValue'])
 }
 .result-box .label { font-size: 0.85rem; color: #b45309; margin: 0 0 4px; font-weight: bold; }
 .result-box .value { font-size: 1.1rem; color: #1f2937; font-family: 'SF Mono', monospace; }
-.result-box .tip { font-size: 0.8rem; color: #92400e; margin: 8px 0 0; }
+
+/* 新增样式 */
+.check-tip { font-size: 0.9rem; color: #92400e; margin-bottom: 12px; font-weight: 500; }
+.check-actions { display: flex; gap: 12px; }
 </style>

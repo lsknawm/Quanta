@@ -1,7 +1,8 @@
 <script setup>
 import { Check, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 
-defineProps({
+// 修改点 1: 接收 props 对象
+const props = defineProps({
   question: Object,
   modelValue: Number, // 用户选中的索引
   isSubmitted: Boolean,
@@ -11,7 +12,8 @@ defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const handleClick = (idx) => {
-  if (!isSubmitted) emit('update:modelValue', idx)
+  // 修改点 2: 使用 props.isSubmitted
+  if (!props.isSubmitted) emit('update:modelValue', idx)
 }
 </script>
 
@@ -52,7 +54,7 @@ const handleClick = (idx) => {
 </template>
 
 <style scoped>
-/* 这里复用之前 QuestionCard 里的 .option-item 相关样式 */
+/* 样式保持不变 */
 .options-list { display: flex; flex-direction: column; gap: 12px; }
 .option-item {
   display: flex; align-items: flex-start; padding: 16px 20px;

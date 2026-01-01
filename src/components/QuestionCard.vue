@@ -4,7 +4,6 @@ import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
 import 'katex/dist/katex.min.css'
 import { VideoPlay, Promotion } from '@element-plus/icons-vue'
 
-// QuestionCard.vue 中的这段代码现在是正确的，只要文件位置对上就行
 import TypeSingleChoice from './types/TypeSingleChoice.vue'
 import TypeMultipleChoice from './types/TypeMultipleChoice.vue'
 import TypeShortAnswer from './types/TypeShortAnswer.vue'
@@ -14,53 +13,62 @@ const props = defineProps({
   index: { type: Number, required: true }
 })
 
-// 状态管理
-const userAnswer = ref(null) // 可能是数字(单选)，数组(多选)，字符串(简答)
+const userAnswer = ref(null)
 const showAnswer = ref(false)
 const hasSubmitted = ref(false)
 const answerRef = ref(null)
 const questionTextRef = ref(null)
 
-// 动态组件映射
+// 新增：简答题的手动评分状态 (null=未评, true=对, false=错)
+const manualCorrect = ref(null)
+
 const componentMap = {
   'single_choice': TypeSingleChoice,
-  'choice': TypeSingleChoice, // 兼容旧数据
+  'choice': TypeSingleChoice,
   'multiple_choice': TypeMultipleChoice,
   'short_answer': TypeShortAnswer
 }
 
-// 初始化用户答案的默认值
 const initAnswer = () => {
   const type = props.question.type
   if (type === 'multiple_choice') userAnswer.value = []
   else if (type === 'short_answer') userAnswer.value = ''
-  else userAnswer.value = null // single_choice
+  else userAnswer.value = null
 }
 
-// 监听题目变化，重置状态
+const katexOptions = {
+  delimiters: [
+    {left: '$$', right: '$$', display: true},
+    {left: '$', right: '$', display: false}
+  ],
+  throwOnError: false
+}
+
+const renderAllMath = () => {
+  if (questionTextRef.value) renderMathInElement(questionTextRef.value, katexOptions)
+}
+
 watch(() => props.question, () => {
   hasSubmitted.value = false
   showAnswer.value = false
+  manualCorrect.value = null // 重置手动评分
   initAnswer()
   nextTick(renderAllMath)
 }, { immediate: true })
 
-// 答案解析
 const correctData = computed(() => {
   if (!props.question.answer) return null
   const q = props.question
-
   if (q.type === 'single_choice' || q.type === 'choice') {
     return q.answer.charCodeAt(0) - 65
   }
   if (q.type === 'multiple_choice') {
-    // 将 ["A", "B"] 转为 [0, 1]
     return q.answer.map(char => char.charCodeAt(0) - 65)
   }
-  return q.answer // 简答题直接返回字符串
+  return q.answer
 })
 
-// 判断正误逻辑
+// 修改点：处理简答题逻辑 & 修复 sort 副作用
 const isCorrect = computed(() => {
   if (!hasSubmitted.value) return false
   const type = props.question.type
@@ -68,41 +76,67 @@ const isCorrect = computed(() => {
   if (type === 'single_choice' || type === 'choice') {
     return userAnswer.value === correctData.value
   }
+
   if (type === 'multiple_choice') {
-    // 数组比较：长度相等且内容一致
-    const u = userAnswer.value.sort().join(',')
-    const c = correctData.value.sort().join(',')
+    // 修复：使用 [...arr] 避免原地 sort 修改
+    const u = [...userAnswer.value].sort().join(',')
+    const c = [...correctData.value].sort().join(',')
     return u === c
   }
+
+  // 修改：简答题逻辑
   if (type === 'short_answer') {
-    // 简答题简单的字符串比对，忽略前后空格
-    return userAnswer.value.trim() === correctData.value.trim()
+    // 如果有手动评分，以手动评分为准
+    if (manualCorrect.value !== null) return manualCorrect.value
+    // 默认认为“未完成判定” (返回 false，但在 UI 上做特殊处理)
+    return false
   }
   return false
 })
 
-// KaTeX 渲染
-const katexOptions = { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false }
-const renderAllMath = () => {
-  if (questionTextRef.value) renderMathInElement(questionTextRef.value, katexOptions)
-  // 子组件内部的渲染由子组件或 nextTick 处理，这里主要处理题干
+// 新增：处理子组件传来的手动评分
+const handleSelfMark = (status) => {
+  manualCorrect.value = status
 }
+
 const toggleAnswer = async () => {
   showAnswer.value = !showAnswer.value
   if (showAnswer.value) await nextTick(() => { if (answerRef.value) renderMathInElement(answerRef.value, katexOptions) })
 }
 
 const submitAnswer = () => {
-  // 简答题允许空提交？还是做个非空校验？这里做个简单的
   if (props.question.type === 'short_answer' && !userAnswer.value) return
   if (props.question.type !== 'short_answer' && userAnswer.value === null) return
   if (Array.isArray(userAnswer.value) && userAnswer.value.length === 0) return
 
   hasSubmitted.value = true
-  if (!isCorrect.value && !showAnswer.value) toggleAnswer()
+
+  // 如果不是简答题，且答错了，自动展开解析
+  if (props.question.type !== 'short_answer' && !isCorrect.value && !showAnswer.value) {
+    toggleAnswer()
+  }
+  // 简答题提交后，自动展开解析供对比
+  if (props.question.type === 'short_answer' && !showAnswer.value) {
+    toggleAnswer()
+  }
 }
 
 const getDiffColor = (diff) => ({ 'A': 'success', 'B': 'info', 'C': 'warning', 'D': 'danger' }[diff] || 'info')
+
+// 新增：计算顶部 Tag 的状态
+const statusTag = computed(() => {
+  if (!hasSubmitted.value) return null
+
+  if (props.question.type === 'short_answer') {
+    if (manualCorrect.value === true) return { type: 'success', text: '回答正确' }
+    if (manualCorrect.value === false) return { type: 'danger', text: '回答错误' }
+    return { type: 'warning', text: '待自评' }
+  }
+
+  return isCorrect.value
+    ? { type: 'success', text: '回答正确' }
+    : { type: 'danger', text: '回答错误' }
+})
 </script>
 
 <template>
@@ -114,9 +148,10 @@ const getDiffColor = (diff) => ({ 'A': 'success', 'B': 'info', 'C': 'warning', '
           {{ question.category }} · {{ question.type === 'multiple_choice' ? '多选题' : (question.type === 'short_answer' ? '简答题' : '单选题') }}
         </el-tag>
       </div>
+
       <transition name="el-fade-in">
-        <el-tag v-if="hasSubmitted" :type="isCorrect ? 'success' : 'danger'" effect="dark" round>
-          {{ isCorrect ? '回答正确' : (question.type === 'short_answer' ? '请核对解析' : '回答错误') }}
+        <el-tag v-if="hasSubmitted" :type="statusTag.type" effect="dark" round>
+          {{ statusTag.text }}
         </el-tag>
       </transition>
     </div>
@@ -135,6 +170,8 @@ const getDiffColor = (diff) => ({ 'A': 'success', 'B': 'info', 'C': 'warning', '
         :correctIndex="correctData"
         :correctIndices="correctData"
         :correctAnswer="question.answer"
+        :selfCorrectStatus="manualCorrect"
+        @toggle-correct="handleSelfMark"
       />
     </div>
 
@@ -166,7 +203,7 @@ const getDiffColor = (diff) => ({ 'A': 'success', 'B': 'info', 'C': 'warning', '
 </template>
 
 <style scoped>
-/* 这里保留之前的 Card 样式即可 */
+/* 样式与之前保持一致 */
 .card-container { background: #fff; border-radius: 16px; border: 1px solid #f3f4f6; margin-bottom: 32px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 .card-header { padding: 24px 32px 0; display: flex; justify-content: space-between; align-items: center; }
 .question-number { font-family: 'SF Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; margin-right: 12px; }
