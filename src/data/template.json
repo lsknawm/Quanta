@@ -1,0 +1,706 @@
+[
+  {
+    "id": "M-2026-11",
+    "type": "single_choice",
+    "meta": {
+      "chapter": "高等数学-极限与连续",
+      "difficulty": "C",
+      "score": 5
+    },
+    "content": {
+      "text": "函数 $f(x) = x \\sin(\\frac{1}{x})$ 在 $x \\to 0$ 时的极限性态如图所示。下列说法正确的是：",
+      "code": "import matplotlib.pyplot as plt\nimport numpy as np\nx = np.linspace(-0.2, 0.2, 1000)\nx = x[x!=0]\ny = x * np.sin(1/x)\nplt.figure(figsize=(5, 3))\nplt.plot(x, y, label='y=x*sin(1/x)')\nplt.plot(x, x, 'r--', alpha=0.3, label='y=x')\nplt.plot(x, -x, 'r--', alpha=0.3)\nplt.legend()\nplt.title('Limit Behavior')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "vertical",
+      "options": [
+        {
+          "id": "A",
+          "text": "极限不存在，因为振荡",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "B",
+          "text": "极限为 0",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "C",
+          "text": "极限为 $\\infty$",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "D",
+          "text": "是跳跃间断点",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        }
+      ]
+    },
+    "validation": {
+      "answer": "B",
+      "explanation": {
+        "text": "虽然 $\\sin(1/x)$ 在 $x \\to 0$ 时振荡，但由夹逼准则，$-|x| \\le x \\sin(1/x) \\le |x|$，当 $x \\to 0$ 时极限为 0。图中红色虚线即为包络线。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "CO-2026-12",
+    "type": "single_choice",
+    "meta": {
+      "chapter": "计算机组成原理-数据校验",
+      "difficulty": "D"
+    },
+    "content": {
+      "text": "下图展示了海明码（Hamming Code）的校验圆盘示意图（偶校验）。若中心区域（重叠部分）表示出错位，根据圆盘状态，出错的是哪一位？",
+      "code": "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(4, 4))\nax.set_axis_off()\n# 画三个相交的圆\nc1 = plt.Circle((0.35, 0.4), 0.3, color='r', alpha=0.2, label='P1')\nc2 = plt.Circle((0.65, 0.4), 0.3, color='g', alpha=0.2, label='P2')\nc3 = plt.Circle((0.5, 0.65), 0.3, color='b', alpha=0.2, label='P4')\nax.add_patch(c1)\nax.add_patch(c2)\nax.add_patch(c3)\n# 标注文字\nax.text(0.5, 0.5, 'D?', ha='center', weight='bold')\nax.text(0.2, 0.2, 'P1 Correct', fontsize=8)\nax.text(0.8, 0.2, 'P2 Error', fontsize=8, color='red')\nax.text(0.5, 0.9, 'P4 Error', fontsize=8, color='red')\nax.set_xlim(0, 1); ax.set_ylim(0, 1)\nplt.title('Hamming Venn Diagram')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "vertical",
+      "options": [
+        {
+          "id": "A",
+          "text": "D1",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "B",
+          "text": "D2",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "C",
+          "text": "D3",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "D",
+          "text": "D4",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        }
+      ]
+    },
+    "validation": {
+      "answer": "C",
+      "explanation": {
+        "text": "P1 正确，P2 错，P4 错。海明指误字(Syndrome) $S_4 S_2 S_1 = 110_2 = 6$。第6位通常对应数据位 D3（取决于具体编码方案，通常顺序为 P1 P2 D1 P4 D2 D3 D4）。这里假设标准海明编码顺序。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "DS-2026-13",
+    "type": "single_choice",
+    "meta": {
+      "chapter": "数据结构-树",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "对于下图所示的二叉树，其 **后序遍历** 序列是：",
+      "code": "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(4, 3))\nax.axis('off')\ndef node(x, y, val):\n    ax.text(x, y, val, ha='center', va='center', bbox=dict(boxstyle='circle', fc='white'))\n# 根 A\nnode(2, 3, 'A')\nax.plot([2, 1], [3, 2], 'k-')\nax.plot([2, 3], [3, 2], 'k-')\n# 左 B\nnode(1, 2, 'B')\nax.plot([1, 1.5], [2, 1], 'k-')\n# 右 C\nnode(3, 2, 'C')\nax.plot([3, 2.5], [2, 1], 'k-')\nax.plot([3, 3.5], [2, 1], 'k-')\n# B的右孩子 D\nnode(1.5, 1, 'D')\n# C的左孩子 E, 右孩子 F\nnode(2.5, 1, 'E')\nnode(3.5, 1, 'F')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "vertical",
+      "options": [
+        {
+          "id": "A",
+          "text": "D B E F C A",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "B",
+          "text": "D E F B C A",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "C",
+          "text": "B D E F C A",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "D",
+          "text": "A B D C E F",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        }
+      ]
+    },
+    "validation": {
+      "answer": "A",
+      "explanation": {
+        "text": "后序遍历（左右根）：\n左子树(B) -> B无左，访问B右(D)，最后B。即 D B。\n右子树(C) -> C左(E)，C右(F)，最后C。即 E F C。\n最后根(A)。\n拼接：D B E F C A。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "M-2026-14",
+    "type": "multiple_choice",
+    "meta": {
+      "chapter": "高等数学-多元函数微分",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "函数 $z = x^2 - y^2$ （马鞍面）在原点 $(0,0)$ 处的图形特征如下。下列关于驻点 $(0,0)$ 的说法正确的是：（多选）",
+      "code": "import matplotlib.pyplot as plt\nimport numpy as np\nfrom mpl_toolkits.mplot3d import Axes3D\nfig = plt.figure(figsize=(5, 4))\nax = fig.add_subplot(111, projection='3d')\nx = np.linspace(-2, 2, 20)\ny = np.linspace(-2, 2, 20)\nX, Y = np.meshgrid(x, y)\nZ = X**2 - Y**2\nax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)\nax.scatter(0, 0, 0, c='r', s=50, label='Saddle Point')\nax.set_title('z = x^2 - y^2')\nax.view_init(elev=20, azim=45)",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "vertical",
+      "options": [
+        {
+          "id": "A",
+          "text": "是极小值点",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "B",
+          "text": "不是极值点",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "C",
+          "text": "AC - B^2 < 0",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "D",
+          "text": "是鞍点",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        }
+      ]
+    },
+    "validation": {
+      "answer": [
+        "B",
+        "C",
+        "D"
+      ],
+      "explanation": {
+        "text": "$z_x=2x, z_y=-2y$，驻点(0,0)。$A=z_{xx}=2, B=z_{xy}=0, C=z_{yy}=-2$。判别式 $AC-B^2 = -4 < 0$，故不是极值点，是鞍点。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "CO-2026-15",
+    "type": "multiple_choice",
+    "meta": {
+      "chapter": "计算机组成原理-指令流水线",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "下列关于流水线冲突（Hazard）的描述中，属于**数据冲突 (Data Hazard)** 的是：（多选）",
+      "code": "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(6, 2))\nax.axis('off')\n# 绘制指令序列\nax.text(0, 0.8, 'I1: ADD R1, R2, R3', fontfamily='monospace')\nax.text(0, 0.6, 'I2: SUB R4, R1, R5', fontfamily='monospace')\nax.annotate('RAW Hazard', xy=(2.5, 0.65), xytext=(2.5, 0.75), arrowprops=dict(facecolor='red', arrowstyle='->'))\nax.text(0, 0.2, 'R1 dependency', color='red')\nplt.title('Instruction Sequence')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "vertical",
+      "options": [
+        {
+          "id": "A",
+          "text": "写后读 (RAW)",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "B",
+          "text": "读后写 (WAR)",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "C",
+          "text": "写后写 (WAW)",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "D",
+          "text": "控制冲突 (Control Hazard)",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        }
+      ]
+    },
+    "validation": {
+      "answer": [
+        "A",
+        "B",
+        "C"
+      ],
+      "explanation": {
+        "text": "数据冲突包括 RAW（相关）、WAR（反相关）和 WAW（输出相关）。D 属于控制冲突（分支跳转引起）。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "DS-2026-16",
+    "type": "multiple_choice",
+    "meta": {
+      "chapter": "数据结构-图的应用",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "给定带权无向图如下。下列哪些边**一定**包含在最小生成树 (MST) 中？（多选）",
+      "code": "import matplotlib.pyplot as plt\nimport networkx as nx\nG = nx.Graph()\n# (u, v, weight)\nedges = [('A','B',1), ('B','C',4), ('A','C',5), ('C','D',2), ('B','D',6)]\nG.add_weighted_edges_from(edges)\npos = {'A':(0,1), 'B':(1,1), 'C':(0,0), 'D':(1,0)}\nplt.figure(figsize=(4,3))\nlabels = nx.get_edge_attributes(G,'weight')\nnx.draw(G, pos, with_labels=True, node_color='lightgreen', node_size=600)\nnx.draw_networkx_edge_labels(G,pos,edge_labels=labels)\nplt.title('Weighted Graph')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "vertical",
+      "options": [
+        {
+          "id": "A",
+          "text": "(A, B) 权值 1",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "B",
+          "text": "(C, D) 权值 2",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "C",
+          "text": "(B, C) 权值 4",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        },
+        {
+          "id": "D",
+          "text": "(A, C) 权值 5",
+          "code": null,
+          "has_image": false,
+          "code_error": false,
+          "image": null
+        }
+      ]
+    },
+    "validation": {
+      "answer": [
+        "A",
+        "B",
+        "C"
+      ],
+      "explanation": {
+        "text": "根据 Kruskal 算法，按权值从小到大排序：1, 2, 4, 5, 6。\n1. 选 (A,B)，无环。\n2. 选 (C,D)，无环。\n3. 选 (B,C)，权4，无环。此时所有点连通 (A-B-C-D)。\nMST 边集为 {(A,B), (C,D), (B,C)}。总权值 7。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "M-2026-17",
+    "type": "fill_blank",
+    "meta": {
+      "chapter": "高等数学-空间解析几何",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "求以 $z$ 轴为旋转轴，母线为 $z = y^2$ 的旋转曲面方程。",
+      "code": "import matplotlib.pyplot as plt\nimport numpy as np\nfrom mpl_toolkits.mplot3d import Axes3D\nfig = plt.figure(figsize=(4, 4))\nax = fig.add_subplot(111, projection='3d')\n\nu = np.linspace(0, 2*np.pi, 50)\nv = np.linspace(0, 2, 50)\nx = v * np.cos(u)\ny = v * np.sin(u)\nz = v**2\n\nax.plot_surface(x, y, z, cmap='autumn', alpha=0.6)\nax.set_title('Surface of Revolution')\nax.set_xlabel('x'); ax.set_ylabel('y'); ax.set_zlabel('z')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "blanks": [
+        {
+          "id": "b1",
+          "placeholder": "输入方程，如 z=..."
+        }
+      ]
+    },
+    "validation": {
+      "answer": {
+        "b1": [
+          "z=x^2+y^2",
+          "z = x^2 + y^2",
+          "x^2+y^2=z"
+        ]
+      },
+      "explanation": {
+        "text": "母线 $z=y^2$ 绕 $z$ 轴旋转。将 $y$ 替换为 $\\pm\\sqrt{x^2+y^2}$，即 $z = (\\pm\\sqrt{x^2+y^2})^2 \\Rightarrow z = x^2 + y^2$（旋转抛物面）。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "CO-2026-18",
+    "type": "fill_blank",
+    "meta": {
+      "chapter": "计算机组成原理-虚拟存储器",
+      "difficulty": "D"
+    },
+    "content": {
+      "text": "下图展示了**段页式**存储管理的地址变换机构。逻辑地址由三部分组成：段号 S、页号 P 和 页内偏移 W。若 CPU 给出逻辑地址，首先需要访问 {{b1}} 表，然后再访问 {{b2}} 表，最后访问主存获取数据。",
+      "code": "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(6, 2))\nax.axis('off')\n# 绘制地址结构\nax.add_patch(plt.Rectangle((0, 0.5), 1, 0.5, fc='white', ec='black'))\nax.add_patch(plt.Rectangle((1, 0.5), 1, 0.5, fc='white', ec='black'))\nax.add_patch(plt.Rectangle((2, 0.5), 2, 0.5, fc='white', ec='black'))\nax.text(0.5, 0.75, 'S', ha='center')\nax.text(1.5, 0.75, 'P', ha='center')\nax.text(3.0, 0.75, 'Offset', ha='center')\nax.arrow(0.5, 0.5, 0, -0.2, head_width=0.1, color='blue')\nax.text(0.5, 0.1, 'Step 1?', ha='center', color='blue')\nax.arrow(1.5, 0.5, 0, -0.2, head_width=0.1, color='blue')\nax.text(1.5, 0.1, 'Step 2?', ha='center', color='blue')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "blanks": [
+        {
+          "id": "b1",
+          "placeholder": "表名"
+        },
+        {
+          "id": "b2",
+          "placeholder": "表名"
+        }
+      ]
+    },
+    "validation": {
+      "answer": {
+        "b1": [
+          "段",
+          "段表"
+        ],
+        "b2": [
+          "页",
+          "页表"
+        ]
+      },
+      "explanation": {
+        "text": "段页式系统中，先查段表找到该段对应的页表始址，再查页表找到物理块号。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "DS-2026-19",
+    "type": "short_answer",
+    "meta": {
+      "chapter": "数据结构-栈与队列",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "设有一个循环队列（Circular Queue），数组 `Q[0..5]` 容量为 6。当前 `front=2`, `rear=4`（如图）。若执行操作：`EnQueue(x)`, `EnQueue(y)`, `DeQueue()`, `DeQueue()`。请写出最终的 `front` 和 `rear` 的值。",
+      "code": "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(6, 2))\nax.set_xlim(-1, 7); ax.set_ylim(0, 2)\nax.axis('off')\nfor i in range(6):\n    ax.add_patch(plt.Rectangle((i, 0.5), 1, 1, fc='white', ec='black'))\n    ax.text(i+0.5, 1.8, str(i), ha='center') # Index\n\n# Data\nax.text(2.5, 1, 'A', ha='center')\nax.text(3.5, 1, 'B', ha='center')\n\n# Pointers\nax.annotate('front=2', xy=(2.5, 0.5), xytext=(2.5, 0.1), arrowprops=dict(arrowstyle='->'))\nax.annotate('rear=4', xy=(4.5, 0.5), xytext=(4.5, 0.1), arrowprops=dict(arrowstyle='->', color='red'))\nplt.title('Circular Queue Q[0..5]')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "max_length": 50
+    },
+    "validation": {
+      "mode": "keyword_hit",
+      "keywords": [
+        "4",
+        "6",
+        "0"
+      ],
+      "answer": "front=4, rear=0",
+      "explanation": {
+        "text": "初始: f=2, r=4 (队中有 A, B)。\n1. EnQueue(x): r=(4+1)%6=5, Q[4]=x。\n2. EnQueue(y): r=(5+1)%6=0, Q[5]=y。\n3. DeQueue(): f=(2+1)%6=3 (A出)。\n4. DeQueue(): f=(3+1)%6=4 (B出)。\n结果: front=4, rear=0。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "CO-2026-20",
+    "type": "short_answer",
+    "meta": {
+      "chapter": "计算机组成原理-磁盘",
+      "difficulty": "C"
+    },
+    "content": {
+      "text": "下图是 **RAID 0** (条带化) 的示意图。请简述 RAID 0 的主要优点和缺点。",
+      "code": "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(5, 3))\nax.axis('off')\n# Disk 1\nax.add_patch(plt.Rectangle((0, 0), 1, 2, fc='#ddd', ec='k'))\nax.text(0.5, 2.2, 'Disk 0', ha='center')\nax.text(0.5, 1.5, 'Block 0', ha='center', bbox=dict(fc='white'))\nax.text(0.5, 0.5, 'Block 2', ha='center', bbox=dict(fc='white'))\n\n# Disk 2\nax.add_patch(plt.Rectangle((2, 0), 1, 2, fc='#ddd', ec='k'))\nax.text(2.5, 2.2, 'Disk 1', ha='center')\nax.text(2.5, 1.5, 'Block 1', ha='center', bbox=dict(fc='white'))\nax.text(2.5, 0.5, 'Block 3', ha='center', bbox=dict(fc='white'))\n\nplt.title('RAID 0 Striping')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "max_length": 200
+    },
+    "validation": {
+      "mode": "keyword_hit",
+      "keywords": [
+        "速度快",
+        "并发",
+        "无冗余",
+        "可靠性差",
+        "损坏"
+      ],
+      "answer": "优点：读写速度快（并发）；缺点：无冗余，可靠性差（一块坏则全坏）。",
+      "explanation": {
+        "text": "RAID 0 将数据条带化分布在多个磁盘上，提高了并发读写速度（吞吐量大），但没有奇偶校验或镜像，任一磁盘损坏会导致所有数据丢失。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "ENG-2026-CLOZE-03",
+    "type": "cloze",
+    "meta": {
+      "chapter": "专业英语-人工智能",
+      "difficulty": "C",
+      "score": 10
+    },
+    "content": {
+      "text": "Artificial Intelligence (AI) is rapidly changing the world. Machine learning algorithms can analyze vast amounts of data {{1}} than any human being. As shown in the figure, the efficiency of AI in specific tasks has grown exponentially. However, this rapid development raises concerns about data {{2}} and security.",
+      "code": "import matplotlib.pyplot as plt\nimport numpy as np\n\nyears = np.arange(2010, 2025, 2)\nhuman_perf = np.ones_like(years) * 80\nai_perf = 10 + (years - 2010) ** 1.8\n\nplt.figure(figsize=(5, 3))\nplt.plot(years, human_perf, 'b--', label='Human Benchmark')\nplt.plot(years, ai_perf, 'r-', label='AI Performance')\nplt.xlabel('Year')\nplt.ylabel('Performance Score')\nplt.title('AI vs Human Performance Trend')\nplt.legend()\nplt.grid(True, alpha=0.3)",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "list",
+      "blanks": [
+        {
+          "id": "1",
+          "options": [
+            {
+              "id": "A",
+              "text": "much faster"
+            },
+            {
+              "id": "B",
+              "text": "more slowly"
+            },
+            {
+              "id": "C",
+              "text": "less efficiently"
+            },
+            {
+              "id": "D",
+              "text": "hardly"
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "options": [
+            {
+              "id": "A",
+              "text": "privacy"
+            },
+            {
+              "id": "B",
+              "text": "speed"
+            },
+            {
+              "id": "C",
+              "text": "cost"
+            },
+            {
+              "id": "D",
+              "text": "monitor"
+            }
+          ]
+        }
+      ]
+    },
+    "validation": {
+      "answer": {
+        "1": "A",
+        "2": "A"
+      },
+      "explanation": {
+        "text": "1. **A**: AI 处理数据通常比人类“快得多” (much faster)。\n2. **A**: 随着 AI 处理大量数据，数据“隐私” (privacy) 成为了主要关注点。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  },
+  {
+    "id": "CS-2026-CLOZE-04",
+    "type": "cloze",
+    "meta": {
+      "chapter": "操作系统-进程管理",
+      "difficulty": "C",
+      "score": 10
+    },
+    "content": {
+      "text": "下图展示了进程的三态模型。当一个正在运行的进程(Running)的时间片用完时，它会转换为 {{1}} 状态。当一个阻塞(Blocked)的进程等待的 I/O 事件完成时，它不会直接回到运行态，而是先转换为 {{2}} 状态，等待调度器重新调度。",
+      "code": "import matplotlib.pyplot as plt\nimport matplotlib.patches as patches\n\nfig, ax = plt.subplots(figsize=(6, 4))\nax.set_xlim(0, 10)\nax.set_ylim(0, 6)\nax.axis('off')\n\n# States\nax.add_patch(patches.Circle((5, 5), 1, fc='#ccffcc', ec='k'))\nax.text(5, 5, 'Running', ha='center', va='center', weight='bold')\n\nax.add_patch(patches.Circle((2, 2), 1, fc='#ffffcc', ec='k'))\nax.text(2, 2, 'Ready', ha='center', va='center', weight='bold')\n\nax.add_patch(patches.Circle((8, 2), 1, fc='#ffcccc', ec='k'))\nax.text(8, 2, 'Blocked', ha='center', va='center', weight='bold')\n\n# Arrows\n# Running -> Ready (Timeout)\nax.annotate('', xy=(2.5, 2.8), xytext=(4.2, 4.5), arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-0.2'))\n# Ready -> Running (Schedule)\nax.annotate('', xy=(4.5, 4.2), xytext=(2.8, 2.5), arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-0.2'))\n\n# Running -> Blocked (Wait I/O)\nax.annotate('', xy=(7.5, 2.8), xytext=(5.8, 4.5), arrowprops=dict(arrowstyle='->'))\n# Blocked -> Ready (I/O Done)\nax.annotate('', xy=(3, 2), xytext=(7, 2), arrowprops=dict(arrowstyle='->', ls='dashed'))\n\nplt.title('Process State Transition')",
+      "has_image": true,
+      "code_error": false,
+      "image": null
+    },
+    "structure": {
+      "layout": "list",
+      "blanks": [
+        {
+          "id": "1",
+          "options": [
+            {
+              "id": "A",
+              "text": "阻塞 (Blocked)"
+            },
+            {
+              "id": "B",
+              "text": "就绪 (Ready)"
+            },
+            {
+              "id": "C",
+              "text": "终止 (Terminated)"
+            },
+            {
+              "id": "D",
+              "text": "新建 (New)"
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "options": [
+            {
+              "id": "A",
+              "text": "运行 (Running)"
+            },
+            {
+              "id": "B",
+              "text": "阻塞 (Blocked)"
+            },
+            {
+              "id": "C",
+              "text": "就绪 (Ready)"
+            },
+            {
+              "id": "D",
+              "text": "挂起 (Suspended)"
+            }
+          ]
+        }
+      ]
+    },
+    "validation": {
+      "answer": {
+        "1": "B",
+        "2": "C"
+      },
+      "explanation": {
+        "text": "1. **B**: 时间片用完，进程被剥夺 CPU，退回**就绪态** (Ready) 等待下一次调度。\n2. **C**: I/O 完成后，进程具备了运行条件，但必须先进入**就绪态** (Ready) 排队，不能直接抢占 CPU。",
+        "code": null,
+        "has_image": false,
+        "code_error": false,
+        "image": null
+      }
+    },
+    "status": {}
+  }
+]
