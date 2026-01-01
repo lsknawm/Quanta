@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
 import 'katex/dist/katex.min.css'
-import { VideoPlay, ArrowDown, Promotion } from '@element-plus/icons-vue'
+import { VideoPlay, Promotion } from '@element-plus/icons-vue'
 
 // 引入子组件
 import TypeSingleChoice from './types/TypeSingleChoice.vue'
