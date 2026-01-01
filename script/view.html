@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>题目数据渲染测试</title>
+  <style>
+      body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+      .container { max-width: 800px; margin: 0 auto; }
+
+      .card {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          margin-bottom: 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      }
+
+      .badge {
+          background: #e6f7ff; color: #1890ff;
+          padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;
+      }
+
+      .question-content { margin: 16px 0; font-size: 16px; line-height: 1.6; }
+
+      /* 图片容器样式 */
+      .generated-image {
+          display: block;
+          max-width: 100%;
+          margin: 10px 0;
+          border: 1px dashed #ccc; /* 虚线框表示这是生成的图片 */
+          padding: 5px;
+          border-radius: 8px;
+      }
+
+      .options { list-style: none; padding: 0; }
+      .option-item {
+          padding: 10px; border: 1px solid #eee; margin-bottom: 8px;
+          border-radius: 6px; display: flex; flex-direction: column;
+      }
+      .option-label { font-weight: bold; margin-right: 10px; color: #555; }
+
+      .error-msg { color: red; background: #fff1f0; padding: 20px; border-radius: 8px; display: none;}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔍 JSON 数据渲染预览</h1>
+  <div id="error-box" class="error-msg"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+  // 核心渲染逻辑
+  async function loadData() {
+    try {
+      // 请求同目录下的 processed_questions.json
+      const response = await fetch('./processed_questions.json');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      renderQuestions(data);
+
+    } catch (error) {
+      const errorBox = document.getElementById('error-box');
+      errorBox.style.display = 'block';
+      errorBox.innerHTML = `
+                <h3>⚠️ 无法加载数据</h3>
+                <p>错误信息: ${error.message}</p>
+                <p><strong>解决方法：</strong> 浏览器出于安全策略，通常不允许直接读取本地 JSON 文件 (file:// 协议)。</p>
+                <p>请在 scripts 目录下打开终端，运行以下 Python 命令启动一个临时服务器：</p>
+                <code>python -m http.server</code>
+                <p>然后在浏览器访问： <a href="http://localhost:8000/view.html">http://localhost:8000/view.html</a></p>
+            `;
+    }
+  }
+
+  function renderQuestions(questions) {
+    const app = document.getElementById('app');
+
+    questions.forEach((q, index) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      // 渲染题干
+      let contentHtml = `<p>${q.content}</p>`;
+      // 检查是否有 content_image 字段
+      if (q.content_image) {
+        contentHtml += `<img src="${q.content_image}" class="generated-image" alt="题干配图">`;
+      }
+
+      // 渲染选项
+      let optionsHtml = '<ul class="options">';
+      q.options.forEach(opt => {
+        let optImgHtml = '';
+        // 检查选项是否有图片
+        if (opt.option_image) {
+          optImgHtml = `<img src="${opt.option_image}" class="generated-image" style="max-width: 100px;">`;
+        }
+        optionsHtml += `
+                    <li class="option-item">
+                        <div><span class="option-label">${opt.label}.</span> ${opt.text}</div>
+                        ${optImgHtml}
+                    </li>`;
+      });
+      optionsHtml += '</ul>';
+
+      card.innerHTML = `
+                <div><span class="badge">ID: ${q.id}</span></div>
+                <div class="question-content">${contentHtml}</div>
+                ${optionsHtml}
+                <div style="margin-top:10px; color:#888; font-size:0.9em;">
+                    正确答案: <strong>${q.answer}</strong>
+                </div>
+            `;
+
+      app.appendChild(card);
+    });
+  }
+
+  // 启动加载
+  loadData();
+</script>
+
+</body>
+</html>

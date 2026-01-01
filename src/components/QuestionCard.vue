@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
 import 'katex/dist/katex.min.css'
-// 确保安装了 @element-plus/icons-vue 才能引入这些图标
 import { VideoPlay, ArrowDown, Check, CircleCheck, CircleClose, Promotion } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -13,11 +12,12 @@ const props = defineProps({
 const selectedOption = ref(null)
 const showAnswer = ref(false)
 const hasSubmitted = ref(false)
-const contentRef = ref(null)
+
+// 修改 1: 不再使用单一的大容器 ref，而是拆分为题目和选项的 ref
+const questionTextRef = ref(null)
+const optionRefs = ref([]) // 这是一个数组，用来存储所有选项内容的 DOM
 const answerRef = ref(null)
 
-// 计算正确答案的索引 (例如 'C' -> 2)
-// 增加空值保护，防止 question.answer 为空时报错
 const correctIndex = computed(() => {
   if (!props.question.answer) return -1
   return props.question.answer.charCodeAt(0) - 65
@@ -42,14 +42,17 @@ const renderArea = (element) => {
 }
 
 onMounted(() => {
-  renderArea(contentRef.value)
+  // 修改 2: 精准渲染，只渲染题目文本和选项内容，避开 Vue 管理的 Marker
+  renderArea(questionTextRef.value)
+  if (optionRefs.value) {
+    optionRefs.value.forEach(el => renderArea(el))
+  }
 })
 
 const submitAnswer = () => {
   if (selectedOption.value === null) return
   hasSubmitted.value = true
 
-  // 如果做错，自动展开解析
   if (!isCorrect.value && !showAnswer.value) {
     toggleAnswer()
   }
@@ -59,7 +62,6 @@ const toggleAnswer = async () => {
   showAnswer.value = !showAnswer.value
   if (showAnswer.value) {
     await nextTick()
-    // 增加判空，防止 answerRef 未准备好
     if (answerRef.value) {
       renderArea(answerRef.value)
     }
@@ -93,8 +95,8 @@ const getDiffColor = (diff) => {
       </transition>
     </div>
 
-    <div class="card-body" ref="contentRef">
-      <div class="question-text" v-html="question.content"></div>
+    <div class="card-body">
+      <div class="question-text" ref="questionTextRef" v-html="question.content"></div>
 
       <div class="options-list" v-if="question.type === 'choice'">
         <div
@@ -120,7 +122,8 @@ const getDiffColor = (diff) => {
               <span v-else>{{ String.fromCharCode(65 + idx) }}</span>
             </template>
           </div>
-          <div class="option-content" v-html="option"></div>
+
+          <div class="option-content" ref="optionRefs" v-html="option"></div>
         </div>
       </div>
     </div>
@@ -168,7 +171,7 @@ const getDiffColor = (diff) => {
 </template>
 
 <style scoped>
-/* 基础样式 */
+/* 样式保持不变 */
 .card-container {
   background: #fff;
   border-radius: 16px;
@@ -184,7 +187,6 @@ const getDiffColor = (diff) => {
 .card-body { padding: 20px 32px 32px; }
 .question-text { font-size: 1.1rem; line-height: 1.75; color: #1f2937; margin-bottom: 28px; font-weight: 500; }
 
-/* 选项样式 */
 .options-list { display: flex; flex-direction: column; gap: 12px; }
 .option-item {
   display: flex; align-items: center; padding: 16px 20px;
@@ -212,13 +214,11 @@ const getDiffColor = (diff) => {
   transition: all 0.2s;
 }
 
-/* 按钮区 */
 .card-action { padding: 0 32px 32px; display: flex; gap: 16px; }
 .action-btn { flex: 1; border-radius: 10px; font-weight: 600; height: 48px; font-size: 1rem; }
 .toggle-btn { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
 .toggle-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #334155; }
 
-/* 解析区 */
 .answer-wrapper { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 32px; }
 .answer-header { display: flex; align-items: center; margin-bottom: 16px; }
 .answer-header .label { font-size: 0.9rem; color: #64748b; margin-right: 12px; }
