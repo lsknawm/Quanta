@@ -9,38 +9,35 @@ import {
   Collection
 } from '@element-plus/icons-vue'
 
-// --- 现有逻辑 (保持不变) ---
-const questions = ref([
-  {
-    id: 101,
-    type: 'choice',
-    category: '高等数学',
-    difficulty: 'C',
-    content: String.raw`求极限 $\lim_{x \to 0} \frac{\int_0^x (e^{t^2} - 1) dt}{x^3}$ 的值。`,
-    options: [String.raw`$1$`, String.raw`$\frac{1}{2}$`, String.raw`$\frac{1}{3}$`, String.raw`$0$`],
-    answer: 'C',
-    explanation: String.raw`本题考察洛必达法则...`
-  },
-  {
-    id: 201,
-    type: 'choice',
-    category: '线性代数',
-    difficulty: 'D',
-    content: String.raw`设 $A$ 为 3 阶矩阵，其特征值为 $1, -1, 2$，则 $|A^* + 3E| = ?$`,
-    options: ['$24$', '$30$', '$32$', '$48$'],
-    answer: 'A',
-    explanation: String.raw`利用伴随矩阵性质...`
-  }
-])
+// --- 修改点：引入外部 JSON 数据 ---
+// 确保你已经把生成的 json 文件放到了 src/data/questions.json
+import questionData from '@/data/questions.json'
+
+// --- 使用引入的数据 ---
+// ref(questionData) 会将数据变成响应式，方便后续交互
+const questions = ref(questionData)
 
 const currentIndex = ref(0)
-const currentQuestion = computed(() => questions.value[currentIndex.value])
-const progressPercentage = computed(() => ((currentIndex.value + 1) / questions.value.length) * 100)
+// 使用 computed 动态计算当前题目，防止索引越界
+const currentQuestion = computed(() => {
+  if (!questions.value || questions.value.length === 0) return null
+  return questions.value[currentIndex.value]
+})
 
-const nextQuestion = () => { if (currentIndex.value < questions.value.length - 1) currentIndex.value++ }
-const prevQuestion = () => { if (currentIndex.value > 0) currentIndex.value-- }
+const progressPercentage = computed(() => {
+  if (!questions.value || questions.value.length === 0) return 0
+  return ((currentIndex.value + 1) / questions.value.length) * 100
+})
 
-// --- 新增：上传相关逻辑 ---
+const nextQuestion = () => {
+  if (currentIndex.value < questions.value.length - 1) currentIndex.value++
+}
+
+const prevQuestion = () => {
+  if (currentIndex.value > 0) currentIndex.value--
+}
+
+// --- 上传相关逻辑 ---
 const uploadVisible = ref(false)
 const activeTab = ref('题库') // 用于控制顶部 Tab 激活状态
 
@@ -100,12 +97,15 @@ const handleDialogClose = () => {
 
       <main class="main-content">
         <div class="container narrow">
-          <div class="question-wrapper">
+          <div v-if="currentQuestion" class="question-wrapper">
             <QuestionCard
               :key="currentQuestion.id"
               :question="currentQuestion"
               :index="currentIndex"
             />
+          </div>
+          <div v-else class="empty-state">
+            暂无题目数据，请检查 src/data/questions.json
           </div>
 
           <div class="navigation-bar">
@@ -178,7 +178,15 @@ const handleDialogClose = () => {
 }
 .container.narrow { max-width: 720px; }
 
-/* --- 1. Header 样式升级 --- */
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+/* --- 1. Header 样式 --- */
 .app-header {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
@@ -254,7 +262,7 @@ const handleDialogClose = () => {
   color: #4f46e5;
 }
 
-/* 简化版进度条 */
+/* 进度条 */
 .header-right {
   display: flex;
   align-items: center;
@@ -288,7 +296,7 @@ const handleDialogClose = () => {
   transition: width 0.3s ease;
 }
 
-/* --- 2. 主内容区 (保持) --- */
+/* --- 2. 主内容区 --- */
 .main-content { padding: 40px 0; flex: 1; }
 .question-wrapper { min-height: 400px; }
 .navigation-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding: 0 16px; }
@@ -297,8 +305,7 @@ const handleDialogClose = () => {
 .nav-btn { width: 56px !important; height: 56px !important; font-size: 1.2rem !important; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s; }
 .next-btn { background: #4f46e5; border-color: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 
-/* --- 3. Upload Dialog 样式定制 --- */
-/* 这里的 :global 是为了覆盖 Element Plus 内部样式，或者你可以去掉 scoped */
+/* --- 3. Upload Dialog --- */
 :deep(.upload-dialog) {
   border-radius: 16px;
   overflow: hidden;
@@ -326,7 +333,6 @@ const handleDialogClose = () => {
   font-size: 0.9rem;
 }
 
-/* 自定义上传区域样式 */
 :deep(.el-upload-dragger) {
   border: 2px dashed #e5e7eb;
   border-radius: 12px;
@@ -359,10 +365,10 @@ const handleDialogClose = () => {
 /* 移动端适配 */
 @media (max-width: 768px) {
   .header-left { gap: 16px; }
-  .logo-text { display: none; } /* 手机端隐藏 Logo 文字 */
-  .nav-item span { display: none; } /* 手机端只显示图标 */
+  .logo-text { display: none; }
+  .nav-item span { display: none; }
   .nav-item { padding: 8px; }
-  .progress-wrapper { display: none; } /* 手机端隐藏顶部进度条，节省空间 */
+  .progress-wrapper { display: none; }
 
   :deep(.upload-dialog) {
     width: 90% !important;

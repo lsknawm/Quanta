@@ -6,7 +6,7 @@ import numpy as np
 
 # 输入和输出文件路径
 INPUT_FILE = 'raw_questions.json'
-OUTPUT_FILE = 'processed_questions.json'
+OUTPUT_FILE = 'questions.json'
 
 def code_to_base64(code_str):
     """执行绘图代码并返回 Base64 字符串"""
