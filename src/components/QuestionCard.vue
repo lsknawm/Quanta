@@ -18,8 +18,9 @@ const showAnswer = ref(false)
 const hasSubmitted = ref(false)
 const answerRef = ref(null)
 const questionTextRef = ref(null)
+// 1. 新增：获取整个卡片主体的引用，以便渲染选项中的公式
+const cardBodyRef = ref(null)
 
-// 新增：简答题的手动评分状态 (null=未评, true=对, false=错)
 const manualCorrect = ref(null)
 
 const componentMap = {
@@ -44,15 +45,17 @@ const katexOptions = {
   throwOnError: false
 }
 
+// 2. 修改：渲染范围改为 cardBodyRef
 const renderAllMath = () => {
-  if (questionTextRef.value) renderMathInElement(questionTextRef.value, katexOptions)
+  if (cardBodyRef.value) renderMathInElement(cardBodyRef.value, katexOptions)
 }
 
 watch(() => props.question, () => {
   hasSubmitted.value = false
   showAnswer.value = false
-  manualCorrect.value = null // 重置手动评分
+  manualCorrect.value = null
   initAnswer()
+  // 等待 DOM 更新后渲染公式
   nextTick(renderAllMath)
 }, { immediate: true })
 
@@ -68,7 +71,6 @@ const correctData = computed(() => {
   return q.answer
 })
 
-// 修改点：处理简答题逻辑 & 修复 sort 副作用
 const isCorrect = computed(() => {
   if (!hasSubmitted.value) return false
   const type = props.question.type
@@ -78,23 +80,19 @@ const isCorrect = computed(() => {
   }
 
   if (type === 'multiple_choice') {
-    // 修复：使用 [...arr] 避免原地 sort 修改
+    // 数组比较：使用副本排序，防止报错
     const u = [...userAnswer.value].sort().join(',')
     const c = [...correctData.value].sort().join(',')
     return u === c
   }
 
-  // 修改：简答题逻辑
   if (type === 'short_answer') {
-    // 如果有手动评分，以手动评分为准
     if (manualCorrect.value !== null) return manualCorrect.value
-    // 默认认为“未完成判定” (返回 false，但在 UI 上做特殊处理)
     return false
   }
   return false
 })
 
-// 新增：处理子组件传来的手动评分
 const handleSelfMark = (status) => {
   manualCorrect.value = status
 }
@@ -105,17 +103,17 @@ const toggleAnswer = async () => {
 }
 
 const submitAnswer = () => {
+  // 校验逻辑
   if (props.question.type === 'short_answer' && !userAnswer.value) return
   if (props.question.type !== 'short_answer' && userAnswer.value === null) return
   if (Array.isArray(userAnswer.value) && userAnswer.value.length === 0) return
 
   hasSubmitted.value = true
 
-  // 如果不是简答题，且答错了，自动展开解析
+  // 自动展开解析逻辑
   if (props.question.type !== 'short_answer' && !isCorrect.value && !showAnswer.value) {
     toggleAnswer()
   }
-  // 简答题提交后，自动展开解析供对比
   if (props.question.type === 'short_answer' && !showAnswer.value) {
     toggleAnswer()
   }
@@ -123,16 +121,13 @@ const submitAnswer = () => {
 
 const getDiffColor = (diff) => ({ 'A': 'success', 'B': 'info', 'C': 'warning', 'D': 'danger' }[diff] || 'info')
 
-// 新增：计算顶部 Tag 的状态
 const statusTag = computed(() => {
   if (!hasSubmitted.value) return null
-
   if (props.question.type === 'short_answer') {
     if (manualCorrect.value === true) return { type: 'success', text: '回答正确' }
     if (manualCorrect.value === false) return { type: 'danger', text: '回答错误' }
     return { type: 'warning', text: '待自评' }
   }
-
   return isCorrect.value
     ? { type: 'success', text: '回答正确' }
     : { type: 'danger', text: '回答错误' }
@@ -156,7 +151,7 @@ const statusTag = computed(() => {
       </transition>
     </div>
 
-    <div class="card-body">
+    <div class="card-body" ref="cardBodyRef">
       <div class="question-text" ref="questionTextRef" v-html="question.content"></div>
       <div v-if="question.content_image" class="image-wrapper">
         <img :src="question.content_image" class="generated-image" />
@@ -203,7 +198,7 @@ const statusTag = computed(() => {
 </template>
 
 <style scoped>
-/* 样式与之前保持一致 */
+/* 样式保持不变 */
 .card-container { background: #fff; border-radius: 16px; border: 1px solid #f3f4f6; margin-bottom: 32px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 .card-header { padding: 24px 32px 0; display: flex; justify-content: space-between; align-items: center; }
 .question-number { font-family: 'SF Mono', monospace; font-size: 0.85rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; margin-right: 12px; }

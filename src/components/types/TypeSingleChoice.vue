@@ -1,7 +1,7 @@
 <script setup>
 import { Check, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 
-// 修改点 1: 接收 props 对象
+// 1. 接收 props 对象
 const props = defineProps({
   question: Object,
   modelValue: Number, // 用户选中的索引
@@ -12,8 +12,10 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const handleClick = (idx) => {
-  // 修改点 2: 使用 props.isSubmitted
-  if (!props.isSubmitted) emit('update:modelValue', idx)
+  // 2. 修复点：必须使用 props.isSubmitted
+  if (!props.isSubmitted) {
+    emit('update:modelValue', idx)
+  }
 }
 </script>
 
@@ -54,7 +56,6 @@ const handleClick = (idx) => {
 </template>
 
 <style scoped>
-/* 样式保持不变 */
 .options-list { display: flex; flex-direction: column; gap: 12px; }
 .option-item {
   display: flex; align-items: flex-start; padding: 16px 20px;
