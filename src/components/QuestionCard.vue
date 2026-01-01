@@ -4,7 +4,7 @@ import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
 import 'katex/dist/katex.min.css'
 import { VideoPlay, Promotion } from '@element-plus/icons-vue'
 
-// 引入子组件
+// QuestionCard.vue 中的这段代码现在是正确的，只要文件位置对上就行
 import TypeSingleChoice from './types/TypeSingleChoice.vue'
 import TypeMultipleChoice from './types/TypeMultipleChoice.vue'
 import TypeShortAnswer from './types/TypeShortAnswer.vue'
