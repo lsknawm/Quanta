@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
-import katex from 'katex'
 import renderMathInElement from 'katex/dist/contrib/auto-render.mjs'
 import 'katex/dist/katex.min.css'
 // 确保安装了 @element-plus/icons-vue 才能引入这些图标
