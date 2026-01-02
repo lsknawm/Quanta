@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+      body {
+          background: #f4f4f0;
+          font-family: 'Verdana', sans-serif;
+          padding: 40px;
+      }
+      .container { max-width: 900px; margin: 0 auto; }
+
+      header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 40px;
+      }
+      h1 { font-size: 3rem; color: #111; letter-spacing: -2px; margin: 0; }
+
+      .bento-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          grid-template-rows: 200px 200px;
+          gap: 20px;
+      }
+
+      .box {
+          border-radius: 32px;
+          padding: 30px;
+          position: relative;
+          transition: transform 0.2s;
+          cursor: pointer;
+          border: 3px solid rgba(0,0,0,0.05);
+      }
+      .box:hover { transform: translateY(-5px); }
+
+      /* 色块定义 */
+      .box-primary {
+          background-color: #FF6B6B;
+          color: white;
+          grid-row: span 2; /* 竖长条 */
+      }
+      .box-secondary {
+          background-color: #4ECDC4;
+          color: #004d40;
+      }
+      .box-tertiary {
+          background-color: #FFE66D;
+          color: #5d4037;
+      }
+
+      .big-text { font-size: 2.5rem; font-weight: 800; line-height: 1.1; }
+      .icon-circle {
+          width: 60px; height: 60px; background: rgba(255,255,255,0.3);
+          border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          font-size: 1.5rem; margin-bottom: 20px;
+      }
+
+      .control-pill {
+          background: white;
+          padding: 10px 20px;
+          border-radius: 50px;
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 20px;
+          color: #333;
+          font-weight: bold;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Quanta.</h1>
+    <div style="background:#111; color:white; padding: 10px 20px; border-radius: 12px; font-weight:bold;">User: Admin</div>
+  </header>
+
+  <div class="bento-grid">
+    <div class="box box-primary">
+      <div class="icon-circle">🚀</div>
+      <div class="big-text">Start<br>Practice</div>
+      <p style="opacity: 0.9; margin-top: 10px;">配置你的试卷参数</p>
+
+      <div class="control-pill">
+        <span>📚 高等数学</span>
+        <span>▼</span>
+      </div>
+    </div>
+
+    <div class="box box-secondary">
+      <div style="font-size: 2rem; font-weight: bold;">12</div>
+      <div>今日已刷题目</div>
+    </div>
+
+    <div class="box box-tertiary">
+      <div style="font-size: 1.2rem; font-weight: bold;">错题本</div>
+      <div style="margin-top: 5px;">复习 5 道错题 -></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
