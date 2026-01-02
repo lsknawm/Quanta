@@ -13,7 +13,7 @@ const router = createRouter({
       path: '/exam',
       name: 'exam',
       // 路由懒加载，优化性能
-      component: () => import('../views/ExamView.vue')
+      component: () => import('../views/ExamCard.vue')
     }
   ],
   // 切换页面时滚动条回到顶部
