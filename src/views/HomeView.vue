@@ -1,41 +1,33 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubjectStore } from '../stores/subject'
 import {
-  VideoPlay,
-  Reading,
-  Connection,
-  Operation,
+  ArrowRight,
+  Search,
   Trophy,
-  Files
+  Zap,
+  Cpu
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const subjectStore = useSubjectStore()
 
-// --- 表单状态 ---
+// --- 状态 ---
 const form = ref({
   subject: '',
-  chapters: [],
-  // 难度改用数字范围 [1, 5] 对应 [A, E]
-  difficultyRange: [3, 3],
+  difficulty: 'B', // 默认 B
   limit: 10
 })
 
-// --- 难度滑块配置 ---
-// 映射表：数字 -> 字符
-const difficultyMap = { 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E' }
-// 滑块标记点
-const difficultyMarks = {
-  1: { style: { color: '#10b981' }, label: 'A' }, // Easy (Green)
-  2: { style: { color: '#34d399' }, label: 'B' },
-  3: { style: { color: '#fbbf24' }, label: 'C' }, // Medium (Yellow)
-  4: { style: { color: '#f87171' }, label: 'D' },
-  5: { style: { color: '#ef4444' }, label: 'E' }, // Hard (Red)
-}
+// --- 选项配置 ---
+const difficulties = [
+  { value: 'A', label: 'Basic', desc: '基础概念' },
+  { value: 'B', label: 'Advanced', desc: '进阶应用' },
+  { value: 'C', label: 'Expert', desc: '复杂场景' },
+  { value: 'D', label: 'Master', desc: '极高难度' }
+]
 
-// --- 题量预设 ---
 const limitPresets = [5, 10, 20, 50]
 
 // --- 生命周期 ---
@@ -43,578 +35,527 @@ onMounted(() => {
   subjectStore.initData()
 })
 
-// --- 计算属性 ---
-
-// 当前选中的学科对象
-const currentSelectedSubject = computed(() => {
-  return subjectStore.subjects.find(s => s.name === form.value.subject)
-})
-
-// 可选章节列表
-const availableChapters = computed(() => {
-  return currentSelectedSubject.value?.chapters || []
-})
-
-// 底部展示的有效学科卡片
-const validSubjects = computed(() => {
-  return subjectStore.subjects.filter(s => s.chapters && s.chapters.length > 0)
-})
-
-// 生成自然语言的配置总结 (用于直观反馈)
-const configSummary = computed(() => {
-  if (!form.value.subject) return '请先选择一个学科...'
-
-  const chapCount = form.value.chapters.length
-  const chapText = chapCount === 0 ? '全科随机' : `已选 ${chapCount} 章`
-  const diffStart = difficultyMap[form.value.difficultyRange[0]]
-  const diffEnd = difficultyMap[form.value.difficultyRange[1]]
-  const diffText = diffStart === diffEnd ? `难度 ${diffStart}` : `难度 ${diffStart}-${diffEnd}`
-
-  return `${form.value.subject} · ${chapText} · ${diffText} · ${form.value.limit} 题`
-})
-
-// --- 监听 ---
-
-// 切换学科时重置章节
-watch(() => form.value.subject, () => {
-  form.value.chapters = []
-})
-
-// --- 动作 ---
-
+// --- 交互逻辑 ---
 const handleStartQuiz = () => {
-  if (!form.value.subject) {
-    // 简单的抖动效果或提示可以在这里加，目前用原生alert替代
-    alert('请选择学科以开始')
-    return
-  }
+  if (!form.value.subject) return
 
-  const queryParams = {
-    subject: form.value.subject,
-    chapters: form.value.chapters.join(','),
-    difficulty_start: difficultyMap[form.value.difficultyRange[0]],
-    difficulty_end: difficultyMap[form.value.difficultyRange[1]],
-    limit: form.value.limit
-  }
-
-  router.push({ path: '/exam', query: queryParams })
+  router.push({
+    path: '/exam',
+    query: {
+      subject: form.value.subject,
+      difficulty: form.value.difficulty,
+      count: form.value.limit
+    }
+  })
 }
 
-const selectSubjectFromCard = (subjectName) => {
-  form.value.subject = subjectName
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+// 简单的搜索过滤（如果科目很多）
+const searchQuery = ref('')
+const filteredSubjects = computed(() => {
+  const q = searchQuery.value.toLowerCase()
+  return subjectStore.subjects.filter(s => s.toLowerCase().includes(q))
+})
+
+const selectSubject = (sub) => {
+  form.value.subject = sub
 }
 </script>
 
 <template>
-  <div class="home-container">
-    <div class="ambient-light"></div>
+  <div class="saas-container">
+    <div class="content-wrapper">
 
-    <section class="console-section">
-      <div class="console-card">
+      <header class="page-header">
+        <div class="header-badge">Quanta Quiz Engine</div>
+        <h1 class="title">Create your assessment</h1>
+        <p class="subtitle">配置参数以生成定制化的专项练习试卷。</p>
+      </header>
 
-        <div class="card-header">
-          <div class="header-text">
-            <h1>Start Practice</h1>
-            <p>配置你的专属试卷</p>
+      <div class="bento-grid">
+
+        <div class="bento-card subject-card">
+          <div class="card-header">
+            <h3>Select Subject</h3>
+            <div class="search-input-wrapper">
+              <el-icon><Search /></el-icon>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search topics..."
+                class="bare-input"
+              >
+            </div>
           </div>
-          <div class="header-icon">
-            <el-icon><Operation /></el-icon>
+
+          <div class="subject-list custom-scrollbar">
+            <div
+              v-for="sub in filteredSubjects"
+              :key="sub"
+              class="subject-item"
+              :class="{ active: form.subject === sub }"
+              @click="selectSubject(sub)"
+            >
+              <div class="subject-icon">
+                <el-icon><Cpu /></el-icon>
+              </div>
+              <span class="subject-name">{{ sub }}</span>
+              <div class="check-mark" v-if="form.subject === sub">
+                <div class="dot"></div>
+              </div>
+            </div>
+
+            <div v-if="filteredSubjects.length === 0" class="empty-state">
+              No subjects found.
+            </div>
           </div>
         </div>
 
-        <div class="form-body">
-          <div class="form-row main-selects">
-            <div class="form-group subject-group">
-              <label>目标学科</label>
-              <el-select
-                v-model="form.subject"
-                placeholder="选择或搜索学科..."
-                filterable
-                size="large"
-                class="custom-select"
-                popper-class="custom-popper"
+        <div class="grid-column">
+
+          <div class="bento-card config-card">
+            <div class="card-header">
+              <h3>Difficulty</h3>
+              <span class="value-tag">{{ form.difficulty }}</span>
+            </div>
+            <div class="segmented-control">
+              <button
+                v-for="diff in difficulties"
+                :key="diff.value"
+                class="segment-btn"
+                :class="{ active: form.difficulty === diff.value }"
+                @click="form.difficulty = diff.value"
               >
-                <el-option
-                  v-for="sub in subjectStore.subjects"
-                  :key="sub.name"
-                  :label="sub.name"
-                  :value="sub.name"
+                <span class="seg-label">{{ diff.label }}</span>
+                <span class="seg-desc">{{ diff.desc }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bento-card config-card">
+            <div class="card-header">
+              <h3>Question Limit</h3>
+              <span class="value-tag">{{ form.limit }} Qs</span>
+            </div>
+            <div class="limit-selector">
+              <div class="limit-presets">
+                <button
+                  v-for="num in limitPresets"
+                  :key="num"
+                  class="preset-btn"
+                  :class="{ active: form.limit === num }"
+                  @click="form.limit = num"
                 >
-                  <span class="option-label">{{ sub.name }}</span>
-                  <span class="option-count">{{ sub.chapters.length }} 章</span>
-                </el-option>
-              </el-select>
-            </div>
-
-            <div class="form-group chapter-group">
-              <label>章节范围 <span class="sub-label" v-if="form.chapters.length">(已选 {{ form.chapters.length }} 个)</span></label>
-              <el-select
-                v-model="form.chapters"
-                multiple
-                collapse-tags
-                collapse-tags-tooltip
-                placeholder="默认包含所有章节"
-                size="large"
-                class="custom-select"
-                :disabled="!form.subject"
-                no-data-text="请先选择学科"
-              >
-                <el-option
-                  v-for="chap in availableChapters"
-                  :key="chap"
-                  :label="chap"
-                  :value="chap"
-                />
-              </el-select>
-            </div>
-          </div>
-
-          <div class="form-row param-controls">
-
-            <div class="form-group difficulty-group">
-              <label>难度区间 <el-tag size="small" effect="plain" round>{{ difficultyMap[form.difficultyRange[0]] }} - {{ difficultyMap[form.difficultyRange[1]] }}</el-tag></label>
-              <div class="slider-container">
-                <el-slider
-                  v-model="form.difficultyRange"
-                  range
-                  show-stops
-                  :max="5"
-                  :min="1"
-                  :marks="difficultyMarks"
-                  :format-tooltip="(val) => difficultyMap[val]"
-                />
+                  {{ num }}
+                </button>
               </div>
-            </div>
-
-            <div class="form-group limit-group">
-              <label>题目数量</label>
-              <div class="limit-control">
-                <el-input-number
-                  v-model="form.limit"
-                  :min="1"
-                  :max="50"
-                  controls-position="right"
-                  size="large"
+              <div class="custom-limit">
+                <input
+                  v-model.number="form.limit"
+                  type="number"
+                  min="1"
+                  max="50"
                   class="limit-input"
-                />
-                <div class="limit-presets">
-                  <span
-                    v-for="num in limitPresets"
-                    :key="num"
-                    class="preset-chip"
-                    :class="{ active: form.limit === num }"
-                    @click="form.limit = num"
-                  >
-                    {{ num }}
-                  </span>
-                </div>
+                >
               </div>
             </div>
-
           </div>
-        </div>
 
-        <div class="card-footer">
-          <div class="summary-text">
-            <el-icon><Files /></el-icon>
-            <span>{{ configSummary }}</span>
-          </div>
-          <button class="action-btn" @click="handleStartQuiz">
-            <span>生成试卷</span>
-            <el-icon class="btn-icon"><VideoPlay /></el-icon>
+          <button
+            class="start-button"
+            :disabled="!form.subject"
+            @click="handleStartQuiz"
+          >
+            <span class="btn-text">Generate Quiz</span>
+            <el-icon><ArrowRight /></el-icon>
           </button>
-        </div>
 
-      </div>
-    </section>
-
-    <section class="catalog-section">
-      <div class="section-header">
-        <h3>探索知识库</h3>
-      </div>
-
-      <div class="subjects-grid">
-        <div
-          v-for="subject in validSubjects"
-          :key="subject.name"
-          class="subject-card"
-          @click="selectSubjectFromCard(subject.name)"
-        >
-          <div class="subject-icon">
-            {{ subject.name.charAt(0) }}
-          </div>
-          <div class="subject-info">
-            <h4>{{ subject.name }}</h4>
-            <span class="meta">{{ subject.chapters.length }} 个章节</span>
-          </div>
-          <div class="hover-indicator">
-            <el-icon><Connection /></el-icon>
-          </div>
-        </div>
-
-        <div v-if="validSubjects.length === 0 && !subjectStore.isLoading" class="empty-state">
-          暂无数据，请检查后端连接
         </div>
       </div>
-    </section>
+
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* --- Design Variables --- */
+/* --- Modern SaaS Design Tokens --- */
 :root {
-  --primary: #18181b;       /* Zinc 900 */
-  --primary-hover: #27272a; /* Zinc 800 */
-  --accent: #3b82f6;        /* Blue 500 */
-  --bg-page: #f8fafc;
-  --text-main: #1e293b;
-  --text-sub: #64748b;
-  --border: #e2e8f0;
+  --bg-app: #FAFAFA;       /* 极浅的灰白背景 */
+  --bg-card: #FFFFFF;
+  --text-primary: #18181B; /* Zinc 900 */
+  --text-secondary: #71717A; /* Zinc 500 */
+  --text-tertiary: #A1A1AA;
+  --border-subtle: #E4E4E7; /* Zinc 200 */
+  --border-hover: #D4D4D8;
+  --primary-brand: #000000; /* Vercel style Black */
+  --primary-hover: #27272A;
+  --accent-blue: #3B82F6;
+  --radius-xl: 24px;
   --radius-lg: 16px;
-  --radius-md: 8px;
-  --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-.home-container {
-  min-height: 100vh;
-  background-color: var(--bg-page);
-  position: relative;
-  overflow-x: hidden;
-  padding-bottom: 80px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-/* --- Ambient Background --- */
-.ambient-light {
-  position: absolute;
-  top: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120%;
-  height: 600px;
-  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(241,245,249,0.5) 60%, rgba(248,250,252,0) 100%);
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* --- Console Section (Main Form) --- */
-.console-section {
-  position: relative;
-  z-index: 10;
-  padding: 60px 20px 40px;
+.saas-container {
+  min-height: calc(100vh - 64px); /* 减去导航栏高度 */
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  padding: 40px 20px;
   display: flex;
   justify-content: center;
 }
 
-.console-card {
+.content-wrapper {
   width: 100%;
-  max-width: 900px;
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-float);
-  border: 1px solid rgba(255,255,255,0.6);
-  backdrop-filter: blur(12px);
-  overflow: hidden;
-  transition: transform 0.3s ease;
+  max-width: 1000px;
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-header {
-  padding: 32px 40px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: linear-gradient(to bottom, #fff, #fafafa);
+/* --- Header --- */
+.page-header {
+  margin-bottom: 40px;
+  text-align: center;
 }
 
-.header-text h1 {
-  font-size: 1.8rem;
+.header-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #F4F4F5;
+  border: 1px solid #E4E4E7;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.title {
+  font-size: 3rem;
   font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px 0;
+  background: linear-gradient(to bottom, #000, #444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.header-text p {
-  color: var(--text-sub);
-  font-size: 0.95rem;
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: #f1f5f9;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: var(--text-main);
+/* --- Bento Grid Layout --- */
+.bento-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr; /* 左宽右窄 */
+  gap: 20px;
 }
 
-/* --- Form Body --- */
-.form-body {
-  padding: 40px;
-}
-
-.form-row {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 32px;
-}
-
-.main-selects {
-  align-items: flex-start;
-}
-
-/* Make it responsive */
 @media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-    gap: 24px;
+  .bento-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-.form-group {
-  flex: 1;
+.grid-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
 
-.form-group label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-sub);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+/* --- Card Common Styles --- */
+.bento-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-hover);
+}
+
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
 
-.sub-label {
-  font-size: 0.75rem;
-  color: var(--accent);
-  text-transform: none;
+.card-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
 }
 
-/* Custom Select Styling Overrides */
-:deep(.custom-select .el-input__wrapper) {
-  box-shadow: 0 0 0 1px var(--border) inset !important;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background-color: #f8fafc;
-  transition: all 0.2s;
-}
-
-:deep(.custom-select .el-input__wrapper.is-focus),
-:deep(.custom-select .el-input__wrapper:hover) {
-  background-color: white;
-  box-shadow: 0 0 0 2px var(--primary) inset !important;
-}
-
-.option-label {
-  font-weight: 500;
-  color: var(--text-main);
-}
-.option-count {
-  float: right;
-  color: var(--text-sub);
+.value-tag {
+  background: #F4F4F5;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-/* --- Slider & Limit Controls --- */
-.slider-container {
-  padding: 0 12px; /* Prevent labels from cutting off */
-  padding-top: 6px;
+/* --- Subject Card (Left) --- */
+.subject-card {
+  height: 520px; /* 固定高度以允许滚动 */
 }
 
-:deep(.el-slider__bar) {
-  background-color: var(--primary);
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F4F4F5;
+  padding: 6px 12px;
+  border-radius: 8px;
+  width: 200px;
+  transition: width 0.2s ease;
 }
-:deep(.el-slider__button) {
-  border-color: var(--primary);
+
+.search-input-wrapper:focus-within {
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--primary-brand);
+}
+
+.bare-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.9rem;
+  width: 100%;
+  color: var(--text-primary);
+}
+
+.subject-list {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.subject-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.subject-item:hover {
+  border-color: var(--text-tertiary);
+  background: #FAFAFA;
+}
+
+.subject-item.active {
+  border-color: var(--primary-brand);
+  background: #F9FAFB;
+  box-shadow: 0 0 0 1px var(--primary-brand);
+}
+
+.subject-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #F4F4F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.subject-item.active .subject-icon {
+  background: var(--primary-brand);
+  color: #fff;
+}
+
+.subject-name {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.check-mark {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   width: 16px;
   height: 16px;
-}
-
-.limit-control {
+  border: 1px solid var(--primary-brand);
+  border-radius: 50%;
   display: flex;
-  gap: 16px;
   align-items: center;
+  justify-content: center;
 }
 
-.limit-input {
-  width: 140px;
+.check-mark .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary-brand);
+  border-radius: 50%;
+}
+
+/* --- Right Column Controls --- */
+
+/* Segmented Control for Difficulty */
+.segmented-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.segment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  background: #F4F4F5;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.segment-btn:hover {
+  background: #E4E4E7;
+}
+
+.segment-btn.active {
+  background: #fff;
+  border-color: var(--primary-brand);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.seg-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.seg-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Limit Selector */
+.limit-selector {
+  display: flex;
+  gap: 12px;
 }
 
 .limit-presets {
   display: flex;
   gap: 8px;
+  flex: 1;
 }
 
-.preset-chip {
-  padding: 6px 12px;
-  background: #f1f5f9;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-sub);
+.preset-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  background: #fff;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
-}
-
-.preset-chip:hover {
-  background: #e2e8f0;
-}
-
-.preset-chip.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* --- Footer Actions --- */
-.card-footer {
-  padding: 24px 40px;
-  background: #fafafa;
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.summary-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--text-sub);
   font-weight: 500;
+  transition: all 0.2s;
 }
 
-.action-btn {
-  background: var(--primary);
-  color: white;
+.preset-btn:hover {
+  border-color: var(--text-tertiary);
+}
+
+.preset-btn.active {
+  background: var(--primary-brand);
+  color: #fff;
+  border-color: var(--primary-brand);
+}
+
+.limit-input {
+  width: 60px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-weight: 600;
+  outline: none;
+}
+.limit-input:focus {
+  border-color: var(--primary-brand);
+}
+
+/* Start Button */
+.start-button {
+  height: 64px;
   border: none;
-  padding: 14px 32px;
-  border-radius: 12px;
-  font-size: 1rem;
+  background: var(--primary-brand);
+  color: #fff;
+  border-radius: var(--radius-xl);
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.action-btn:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 12px rgba(0,0,0,0.15);
-}
-
-.action-btn:active {
-  transform: translateY(0);
-}
-
-/* --- Catalog Section --- */
-.catalog-section {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 20px;
-  position: relative;
-  z-index: 5;
-}
-
-.section-header {
-  margin-bottom: 24px;
-  padding-left: 8px;
-  border-left: 4px solid var(--primary);
-}
-
-.section-header h3 {
-  font-size: 1.1rem;
-  color: var(--text-main);
-  margin: 0 0 0 12px;
-}
-
-.subjects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-}
-
-.subject-card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.subject-card:hover {
-  border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
-}
-
-.subject-icon {
-  width: 48px;
-  height: 48px;
-  background: #f8fafc;
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--primary);
-  border: 1px solid #e2e8f0;
+  gap: 12px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.subject-info h4 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--text-main);
+.start-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--primary-hover);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 }
 
-.subject-info .meta {
-  font-size: 0.8rem;
-  color: var(--text-sub);
+.start-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
-.hover-indicator {
-  position: absolute;
-  right: 20px;
-  opacity: 0;
-  transform: translateX(-10px);
-  transition: all 0.2s ease;
-  color: var(--primary);
+/* Scrollbar Utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #E4E4E7;
+  border-radius: 20px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #D4D4D8;
 }
 
-.subject-card:hover .hover-indicator {
-  opacity: 1;
-  transform: translateX(0);
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
   padding: 40px;
-  color: var(--text-sub);
-  background: white;
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--border);
+  color: var(--text-secondary);
 }
 </style>
