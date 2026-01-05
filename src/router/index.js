@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-
+import MockExam from '@/views/MockExam.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -12,11 +12,20 @@ const router = createRouter({
     {
       path: '/exam',
       name: 'exam',
-      // 路由懒加载，优化性能
       component: () => import('../views/ExamView.vue')
+    },
+    // --- 新增预览路由 ---
+    {
+      path: '/preview-card',
+      name: 'preview-card',
+      component: () => import('../views/CardPreview.vue')
+    },
+    {
+      path: '/mock-exam',
+      name: 'mock-exam',
+      component: MockExam
     }
   ],
-  // 切换页面时滚动条回到顶部
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition

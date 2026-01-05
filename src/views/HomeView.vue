@@ -3,18 +3,18 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubjectStore } from '../stores/subject'
 import {
-  ArrowRight,
   Search,
-  DataBoard,
-  TrendCharts,
-  Medal,
-  Trophy
+  VideoPlay,
+  Trophy,
+  DataAnalysis,
+  Timer,
+  Collection
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const subjectStore = useSubjectStore()
 
-// --- 状态 ---
+// --- 状态管理 ---
 const form = ref({
   subject: '',
   difficulty: 'B',
@@ -22,23 +22,38 @@ const form = ref({
 })
 const searchQuery = ref('')
 
-// --- 选项配置 (带视觉主题色) ---
-const difficulties = [
-  { value: 'A', label: '入门 Basic', desc: '筑基阶段', color: 'teal', icon: DataBoard },
-  { value: 'B', label: '进阶 Advanced', desc: '核心应用', color: 'blue', icon: TrendCharts },
-  { value: 'C', label: '专家 Expert', desc: '复杂挑战', color: 'indigo', icon: Medal },
-  { value: 'D', label: '大师 Master', desc: '极限场景', color: 'purple', icon: Trophy }
+// --- 难度配置 (带直观的颜色和描述) ---
+const difficultyOptions = [
+  { value: 'A', label: '新手', sub: 'Basic', color: '#10B981', desc: '基础概念巩固' },    // Emerald
+  { value: 'B', label: '进阶', sub: 'Advanced', color: '#3B82F6', desc: '核心知识应用' }, // Blue
+  { value: 'C', label: '挑战', sub: 'Hard', color: '#F59E0B', desc: '复杂场景分析' },     // Amber
+  { value: 'D', label: '噩梦', sub: 'Expert', color: '#EF4444', desc: '极限边界情况' }    // Red
 ]
 
-const limitPresets = [5, 10, 20, 30]
+const limitPresets = [5, 10, 15, 20, 50]
 
 // --- 生命周期 ---
 onMounted(() => {
   subjectStore.initData()
 })
 
-// --- 交互逻辑 ---
-const handleStartQuiz = () => {
+// --- 逻辑处理 ---
+const filteredSubjects = computed(() => {
+  const q = searchQuery.value.toLowerCase()
+  return subjectStore.subjects.filter(s => s.toLowerCase().includes(q))
+})
+
+// 根据当前难度获取对应颜色，用于按钮等动态样式
+const currentThemeColor = computed(() => {
+  const diff = difficultyOptions.find(d => d.value === form.value.difficulty)
+  return diff ? diff.color : '#3B82F6'
+})
+
+const selectSubject = (sub) => {
+  form.value.subject = sub
+}
+
+const handleStart = () => {
   if (!form.value.subject) return
   router.push({
     path: '/exam',
@@ -49,564 +64,533 @@ const handleStartQuiz = () => {
     }
   })
 }
-
-// 科目过滤与选择
-const filteredSubjects = computed(() => {
-  const q = searchQuery.value.toLowerCase()
-  // 简单的字母映射作为图标占位符
-  return subjectStore.subjects
-    .filter(s => s.toLowerCase().includes(q))
-    .map(s => ({ name: s, avatar: s.charAt(0).toUpperCase() }))
-})
-
-const selectSubject = (subName) => {
-  form.value.subject = subName
-}
-
-// 获取当前难度的颜色主题
-const currentDifficultyTheme = computed(() => {
-  return difficulties.find(d => d.value === form.value.difficulty)?.color || 'blue'
-})
 </script>
 
 <template>
-  <div class="premium-container">
-    <div class="ambient-blobs">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
-    </div>
+  <div class="app-container">
+    <div class="bg-decoration"></div>
 
-    <div class="content-wrapper">
+    <div class="main-content">
 
-      <header class="page-header animated-fade-down">
-        <h1>
-          <span class="gradient-text">Boson</span> Quiz Engine
-        </h1>
-        <p class="subtitle">构建您的专属知识挑战，探索智能评估的新维度。</p>
+      <header class="header-section">
+        <h1>开始你的练习</h1>
+        <p>选择科目与难度，定制专属试卷</p>
       </header>
 
-      <div class="main-dashboard animated-fade-up">
+      <div class="dashboard-card">
 
-        <section class="glass-panel subject-panel">
+        <div class="left-panel">
           <div class="panel-header">
-            <h3>
-              <span class="icon-wrapper"><el-icon><Search /></el-icon></span>
-              选择目标题库
-            </h3>
-            <div class="search-bar">
+            <h3><el-icon><Collection /></el-icon> 目标题库</h3>
+            <div class="search-box">
+              <el-icon class="search-icon"><Search /></el-icon>
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="搜索学科..."
-                class="glass-input"
-              >
+                placeholder="搜索科目..."
+              />
             </div>
           </div>
 
-          <div class="subject-wall custom-scrollbar">
+          <div class="subject-grid custom-scroll">
             <div
               v-for="sub in filteredSubjects"
-              :key="sub.name"
-              class="subject-chip glass-card"
-              :class="{ active: form.subject === sub.name }"
-              @click="selectSubject(sub.name)"
+              :key="sub"
+              class="subject-item"
+              :class="{ active: form.subject === sub }"
+              @click="selectSubject(sub)"
             >
-              <div class="chip-avatar">{{ sub.avatar }}</div>
-              <span class="chip-name">{{ sub.name }}</span>
-              <div class="active-glow"></div>
+              <div class="subject-avatar">
+                {{ sub.charAt(0).toUpperCase() }}
+              </div>
+              <div class="subject-info">
+                <span class="name">{{ sub }}</span>
+                <span class="status" v-if="form.subject === sub">已选中</span>
+                <span class="status hint" v-else>点击选择</span>
+              </div>
+              <div class="check-mark" v-if="form.subject === sub">✓</div>
             </div>
 
-            <div v-if="filteredSubjects.length === 0 && !subjectStore.isLoading" class="empty-state">
-              暂无匹配的学科
-            </div>
-            <div v-if="subjectStore.isLoading" class="loading-state">
-              加载题库中...
+            <div v-if="filteredSubjects.length === 0" class="empty-state">
+              未找到相关科目
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="config-console">
+        <div class="right-panel">
 
-          <div class="glass-panel config-panel">
-            <div class="panel-header">
-              <h3>难度等级设定</h3>
-            </div>
-            <div class="difficulty-grid">
+          <div class="config-section">
+            <label><el-icon><Trophy /></el-icon> 难度等级</label>
+            <div class="difficulty-list">
               <div
-                v-for="diff in difficulties"
-                :key="diff.value"
-                class="diff-card glass-card"
-                :class="[diff.color, { active: form.difficulty === diff.value }]"
-                @click="form.difficulty = diff.value"
+                v-for="opt in difficultyOptions"
+                :key="opt.value"
+                class="diff-option"
+                :class="{ active: form.difficulty === opt.value }"
+                :style="form.difficulty === opt.value ? { borderColor: opt.color, backgroundColor: `${opt.color}10` } : {}"
+                @click="form.difficulty = opt.value"
               >
-                <div class="diff-icon">
-                  <el-icon><component :is="diff.icon" /></el-icon>
+                <div class="diff-radio" :style="{ borderColor: form.difficulty === opt.value ? opt.color : '#cbd5e1' }">
+                  <div class="dot" :style="{ backgroundColor: opt.color }" v-show="form.difficulty === opt.value"></div>
                 </div>
-                <div class="diff-info">
-                  <div class="diff-label">{{ diff.label }}</div>
-                  <div class="diff-desc">{{ diff.desc }}</div>
+                <div class="diff-content">
+                  <div class="diff-title" :style="{ color: form.difficulty === opt.value ? opt.color : '' }">
+                    {{ opt.label }} <span class="sub-text">{{ opt.sub }}</span>
+                  </div>
+                  <div class="diff-desc">{{ opt.desc }}</div>
                 </div>
-                <div class="selection-ring"></div>
               </div>
             </div>
           </div>
 
-          <div class="glass-panel config-panel footer-panel" :class="currentDifficultyTheme + '-theme'">
-            <div class="limit-section">
-              <label>生成题量</label>
-              <div class="limit-controls">
-                <div class="presets">
-                    <span
-                      v-for="num in limitPresets"
-                      :key="num"
-                      class="preset-tag"
-                      :class="{ active: form.limit === num }"
-                      @click="form.limit = num"
-                    >{{ num }}</span>
-                </div>
+          <div class="config-section">
+            <label><el-icon><DataAnalysis /></el-icon> 题目数量</label>
+            <div class="limit-selector">
+              <div class="slider-wrapper">
                 <input
+                  type="range"
                   v-model.number="form.limit"
-                  type="number"
-                  min="1" max="50"
-                  class="glass-input limit-input"
-                >
+                  min="5" max="50" step="5"
+                  class="range-slider"
+                  :style="{ accentColor: currentThemeColor }"
+                />
+                <div class="slider-value">{{ form.limit }} 题</div>
+              </div>
+              <div class="preset-chips">
+                <span
+                  v-for="n in limitPresets"
+                  :key="n"
+                  class="chip"
+                  :class="{ active: form.limit === n }"
+                  @click="form.limit = n"
+                >{{ n }}</span>
               </div>
             </div>
+          </div>
 
+          <div class="action-area">
             <button
-              class="start-btn magnetic-effect"
+              class="start-btn"
               :disabled="!form.subject"
-              @click="handleStartQuiz"
+              :style="{ backgroundColor: !form.subject ? '#94a3b8' : currentThemeColor }"
+              @click="handleStart"
             >
-              <span class="btn-content">
-                开始生成试卷
-                <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+              <span v-if="!form.subject">请先选择科目</span>
+              <span v-else class="btn-text">
+                开始测验 <el-icon><VideoPlay /></el-icon>
               </span>
-              <div class="btn-glow"></div>
             </button>
           </div>
 
-        </section>
+        </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <style scoped>
-/* --- Design System Theme --- */
-:root {
-  --bg-app: #F0F2F5;
-  --text-primary: #2D3748;
-  --text-secondary: #718096;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.8);
-  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
-  --blur-strength: 20px;
-
-  /* Theme Colors */
-  --color-teal: #38B2AC;
-  --color-blue: #4299E1;
-  --color-indigo: #667EEA;
-  --color-purple: #9F7AEA;
-  --primary-gradient: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-}
-
-.premium-container {
-  min-height: calc(100vh - 60px);
-  background-color: var(--bg-app);
-  background-image: linear-gradient(to bottom right, #F0F2F5, #E6E9F0);
-  position: relative;
-  overflow: hidden;
+/* --- 基础布局与背景 --- */
+.app-container {
+  min-height: calc(100vh - 64px);
+  background-color: #F8FAFC; /* Slate 50 */
+  display: flex;
+  justify-content: center;
   padding: 40px 20px;
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #334155;
 }
 
-/* --- Ambient Background Effects --- */
-.ambient-blobs {
+.bg-decoration {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 300px;
+  background: linear-gradient(135deg, #E0E7FF 0%, #F8FAFC 100%); /* Indigo tint */
   z-index: 0;
-  pointer-events: none;
-}
-.blob {
-  position: absolute;
-  filter: blur(80px);
-  opacity: 0.4;
-  animation: moveBlob 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-}
-.blob-1 {
-  top: -10%;
-  left: -10%;
-  width: 500px;
-  height: 500px;
-  background: var(--color-blue);
-  animation-delay: -5s;
-}
-.blob-2 {
-  bottom: -20%;
-  right: -10%;
-  width: 600px;
-  height: 600px;
-  background: var(--color-purple);
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
 }
 
-@keyframes moveBlob {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(100px, 50px) scale(1.1); }
-}
-
-.content-wrapper {
+.main-content {
   position: relative;
   z-index: 10;
-  max-width: 1100px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-/* --- Typography & Header --- */
-.page-header {
-  text-align: center;
-  margin-bottom: 50px;
-}
-.page-header h1 {
-  font-size: 3rem;
+/* --- 头部 --- */
+.header-section h1 {
+  font-size: 2rem;
   font-weight: 800;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
-  letter-spacing: -0.02em;
+  color: #1E293B;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.03em;
 }
-.gradient-text {
-  background: var(--primary-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.subtitle {
-  font-size: 1.15rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+.header-section p {
+  color: #64748B;
+  font-size: 1.05rem;
+  margin: 0;
 }
 
-/* --- Glassmorphism Components --- */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur-strength));
-  -webkit-backdrop-filter: blur(var(--blur-strength));
-  border: 1px solid var(--glass-border);
+/* --- 主卡片容器 --- */
+.dashboard-card {
+  background: #FFFFFF;
   border-radius: 24px;
-  box-shadow: var(--glass-shadow);
-  padding: 28px;
+  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0,0,0,0.03);
+  display: flex;
+  overflow: hidden;
+  min-height: 600px;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+@media (max-width: 800px) {
+  .dashboard-card { flex-direction: column; }
 }
 
-.glass-input {
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  padding: 10px 16px;
-  border-radius: 12px;
-  outline: none;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  transition: all 0.3s ease;
-}
-.glass-input:focus {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: var(--color-blue);
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+/* --- 左侧面板 (Subject) --- */
+.left-panel {
+  flex: 3;
+  padding: 32px;
+  background-color: #fff;
+  border-right: 1px solid #F1F5F9;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
 }
 .panel-header h3 {
   margin: 0;
   font-size: 1.1rem;
-  font-weight: 700;
+  color: #0F172A;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--text-primary);
-}
-.icon-wrapper {
-  display: flex;
-  padding: 8px;
-  background: rgba(66, 153, 225, 0.1);
-  color: var(--color-blue);
-  border-radius: 10px;
+  gap: 8px;
 }
 
-/* --- Main Dashboard Layout --- */
-.main-dashboard {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 30px;
-  align-items: start;
+/* 搜索框 */
+.search-box {
+  position: relative;
+  width: 200px;
 }
-@media (max-width: 900px) {
-  .main-dashboard { grid-template-columns: 1fr; }
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94A3B8;
+}
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #F8FAFC;
+  outline: none;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.search-box input:focus {
+  background: #fff;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* --- Subject Wall (Left) --- */
-.subject-panel {
-  min-height: 550px;
-  display: flex;
-  flex-direction: column;
-}
-.search-bar .glass-input {
-  width: 220px;
-}
-.subject-wall {
+/* 学科网格列表 */
+.subject-grid {
   flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-auto-rows: max-content;
+  gap: 16px;
   overflow-y: auto;
-  padding: 4px; /* Prevent shadow clipping */
+  padding: 4px;
 }
 
-.subject-chip {
-  padding: 10px 16px 10px 10px;
+.subject-item {
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  transition: all 0.2s ease;
   position: relative;
-  overflow: hidden;
+  background: #fff;
 }
-.subject-chip:hover {
-  transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+
+.subject-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: #CBD5E1;
 }
-.chip-avatar {
-  width: 36px;
-  height: 36px;
-  background: var(--primary-gradient);
-  color: white;
-  border-radius: 10px;
+
+.subject-item.active {
+  border-color: #3B82F6;
+  background-color: #EFF6FF; /* Blue 50 */
+  box-shadow: 0 0 0 2px #3B82F6 inset;
+}
+
+.subject-avatar {
+  width: 44px;
+  height: 44px;
+  background: #F1F5F9;
+  color: #64748B;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.1rem;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  transition: all 0.2s;
 }
-.chip-name {
+
+.subject-item.active .subject-avatar {
+  background: #3B82F6;
+  color: #fff;
+}
+
+.subject-info {
+  display: flex;
+  flex-direction: column;
+}
+.subject-info .name {
   font-weight: 600;
+  color: #1E293B;
+  font-size: 0.95rem;
+}
+.subject-info .status {
+  font-size: 0.75rem;
+  color: #3B82F6;
+  font-weight: 500;
+}
+.subject-info .hint {
+  color: #94A3B8;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: all 0.2s;
+}
+.subject-item:hover .hint {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.check-mark {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #3B82F6;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* --- 右侧面板 (Config) --- */
+.right-panel {
+  flex: 2;
+  background-color: #FAFAFA; /* Very light gray */
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.config-section label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 16px;
   font-size: 0.95rem;
 }
 
-.subject-chip.active {
-  background: white;
-  border-color: var(--color-indigo);
-}
-.active-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.subject-chip.active .active-glow {
-  opacity: 1;
-}
-
-/* --- Config Console (Right) --- */
-.config-console {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-/* Difficulty Grid */
-.difficulty-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.diff-card {
-  padding: 16px;
+/* 难度选项列表 */
+.difficulty-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  cursor: pointer;
-  position: relative;
-  border-width: 2px;
-}
-.diff-card:hover {
-  transform: scale(1.03);
 }
 
-/* Difficulty Color Themes */
-.diff-card.teal { --theme-color: var(--color-teal); }
-.diff-card.blue { --theme-color: var(--color-blue); }
-.diff-card.indigo { --theme-color: var(--color-indigo); }
-.diff-card.purple { --theme-color: var(--color-purple); }
-
-.diff-icon {
-  width: 40px;
-  height: 40px;
-  background: rgba(255,255,255,0.6);
+.diff-option {
+  background: #fff;
+  border: 1px solid #E2E8F0;
   border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.diff-option:hover {
+  border-color: #CBD5E1;
+  background-color: #fff;
+}
+
+.diff-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #CBD5E1;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
-  color: var(--theme-color);
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
-.diff-label {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--text-primary);
+.diff-radio .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.diff-content {
+  display: flex;
+  flex-direction: column;
+}
+.diff-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1E293B;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.sub-text {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  font-weight: 400;
 }
 .diff-desc {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: #64748B;
+  margin-top: 2px;
 }
 
-.diff-card.active {
-  background: white;
-  border-color: var(--theme-color);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05), 0 0 0 4px rgba(var(--theme-color-rgb), 0.1);
-}
-.diff-card.active .diff-icon {
-  background: var(--theme-color);
-  color: white;
-  box-shadow: 0 4px 10px rgba(var(--theme-color-rgb), 0.3);
-}
-
-/* Footer Panel & Controls */
-.footer-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  transition: all 0.3s ease;
-}
-/* 根据选择的难度改变底部面板的强调色光晕 */
-.footer-panel.teal-theme { box-shadow: 0 8px 32px rgba(56, 178, 172, 0.15); }
-.footer-panel.blue-theme { box-shadow: 0 8px 32px rgba(66, 153, 225, 0.15); }
-.footer-panel.indigo-theme { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15); }
-.footer-panel.purple-theme { box-shadow: 0 8px 32px rgba(159, 122, 234, 0.15); }
-
-.limit-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.limit-section label {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.limit-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.presets {
-  display: flex;
-  background: rgba(255,255,255,0.4);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.5);
-}
-.preset-tag {
-  padding: 6px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.preset-tag.active {
-  background: white;
-  color: var(--color-indigo);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-.limit-input {
-  width: 70px;
-  text-align: center;
-  font-weight: 700;
-}
-
-/* Start Button (Hero Element) */
-.start-btn {
-  position: relative;
-  border: none;
-  height: 64px;
+/* 题量选择 */
+.limit-selector {
+  background: #fff;
+  padding: 20px;
   border-radius: 16px;
-  background: var(--primary-gradient);
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: 1px solid #E2E8F0;
 }
-.btn-content {
-  position: relative;
-  z-index: 2;
-  color: white;
-  font-size: 1.2rem;
-  font-weight: 700;
+
+.slider-wrapper {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-.btn-glow {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-  z-index: 1;
+.range-slider {
+  flex: 1;
+  cursor: pointer;
+  height: 6px;
+  background: #E2E8F0;
+  border-radius: 3px;
+  -webkit-appearance: none;
+}
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid currentColor; /* Takes accent-color */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-top: -6px; /* center it */
+}
+
+.slider-value {
+  font-weight: 700;
+  color: #1E293B;
+  min-width: 40px;
+  text-align: right;
+}
+
+.preset-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #F1F5F9;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chip:hover { background: #E2E8F0; }
+.chip.active {
+  background: #1E293B;
+  color: white;
+}
+
+/* 底部按钮 */
+.action-area {
+  margin-top: auto;
+}
+.start-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 .start-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.5);
-}
-.start-btn:hover .btn-glow {
-  transform: translateX(100%);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 .start-btn:disabled {
-  opacity: 0.6;
-  filter: grayscale(0.5);
   cursor: not-allowed;
+  opacity: 0.7;
+}
+.btn-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* --- Utilities & Animations --- */
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 20px; }
-
-.empty-state, .loading-state {
-  width: 100%;
-  padding: 40px;
+/* 滚动条美化 */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 10px;
+}
+.empty-state {
+  grid-column: 1 / -1;
   text-align: center;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-.animated-fade-down { animation: fadeDown 0.8s ease-out; }
-.animated-fade-up { animation: fadeUp 0.8s ease-out 0.2s backwards; }
-
-@keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  padding: 40px;
+  color: #94A3B8;
 }
 </style>
