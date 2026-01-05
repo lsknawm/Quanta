@@ -1,110 +1,127 @@
 <script setup>
-import { Check, Close } from '@element-plus/icons-vue'
 defineProps({
-  question: { type: Object, required: true },
-  modelValue: { type: String, default: '' }
+  question: {
+    type: Object,
+    required: true
+  },
+  modelValue: {
+    type: [String, Number],
+    default: ''
+  }
 })
 const emit = defineEmits(['update:modelValue'])
 
-const handleSelect = (val) => {
-  emit('update:modelValue', val)
+const handleSelect = (id) => {
+  emit('update:modelValue', id)
 }
 </script>
 
 <template>
-  <div class="true-false-wrapper">
-    <div class="question-stem">
-      {{ question.content.text }}
-    </div>
-
-    <div class="tf-options">
-      <button
-        class="tf-btn true-btn"
-        :class="{ active: modelValue === 'OPT_TRUE' }"
-        @click="handleSelect('OPT_TRUE')"
+  <div class="true-false-container">
+    <div class="tf-grid">
+      <div
+        v-for="opt in question.structure.options"
+        :key="opt.id"
+        class="tf-card"
+        :class="{
+          active: modelValue === opt.id,
+          'is-true': opt.id.includes('TRUE') || opt.text === '正确',
+          'is-false': opt.id.includes('FALSE') || opt.text === '错误'
+        }"
+        @click="handleSelect(opt.id)"
       >
-        <div class="icon-circle"><el-icon><Check /></el-icon></div>
-        <span>正确 / True</span>
-      </button>
+        <div class="icon-box">
+          <span v-if="opt.id.includes('TRUE') || opt.text === '正确'" class="icon">✓</span>
+          <span v-else class="icon">✕</span>
+        </div>
 
-      <button
-        class="tf-btn false-btn"
-        :class="{ active: modelValue === 'OPT_FALSE' }"
-        @click="handleSelect('OPT_FALSE')"
-      >
-        <div class="icon-circle"><el-icon><Close /></el-icon></div>
-        <span>错误 / False</span>
-      </button>
+        <span class="tf-text">{{ opt.text }}</span>
+
+        <img v-if="opt.has_image" :src="opt.image" class="tf-img" />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.question-stem {
-  font-size: 1.15rem;
-  font-weight: 500;
-  color: #18181B;
-  margin-bottom: 32px;
+.true-false-container {
+  margin-top: 20px;
 }
 
-.tf-options {
-  display: flex;
-  gap: 20px;
-}
-
-.tf-btn {
-  flex: 1;
-  padding: 30px;
-  border: 2px solid #E4E4E7;
-  background: #fff;
-  border-radius: 16px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.2s ease;
-}
-
-.tf-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-
-.icon-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #F4F4F5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  transition: all 0.2s;
-}
-
-/* True Style */
-.true-btn:hover { border-color: #10B981; }
-.true-btn.active {
-  background: #ECFDF5;
-  border-color: #10B981;
-  color: #065F46;
-}
-.true-btn.active .icon-circle {
-  background: #10B981;
-  color: white;
-}
-
-/* False Style */
-.false-btn:hover { border-color: #EF4444; }
-.false-btn.active {
-  background: #FEF2F2;
-  border-color: #EF4444;
-  color: #991B1B;
-}
-.false-btn.active .icon-circle {
-  background: #EF4444;
-  color: white;
+.tf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 左右两栏布局 */
+  gap: 24px;
 }
 
 @media (max-width: 600px) {
-  .tf-options { flex-direction: column; }
+  .tf-grid {
+    grid-template-columns: 1fr; /* 手机端改为上下布局 */
+  }
 }
+
+.tf-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  border: 2px solid var(--border-color, #e5e7eb);
+  border-radius: 16px;
+  cursor: pointer;
+  background: var(--bg-surface, #fff);
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  gap: 16px;
+}
+
+.tf-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: var(--border-hover, #cbd5e1);
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-surface-alt, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-secondary, #94a3b8);
+  transition: all 0.2s;
+}
+
+.tf-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-main, #334155);
+}
+
+/* 选中样式 */
+.tf-card.active {
+  border-color: var(--color-primary, #3b82f6);
+  background-color: var( #eff6ff);
+}
+.tf-card.active .icon-box {
+  background-color: var(--color-primary, #3b82f6);
+  color: #fff;
+}
+.tf-card.active .tf-text {
+  color: var(--color-primary, #3b82f6);
+}
+
+/* (可选) 为正确/错误选项添加特定颜色倾向，如果你喜欢的话 */
+/* .tf-card.is-true:hover { border-color: #10b981; }
+.tf-card.is-true.active { border-color: #10b981; background-color: #ecfdf5; }
+.tf-card.is-true.active .icon-box { background-color: #10b981; }
+.tf-card.is-true.active .tf-text { color: #059669; }
+
+.tf-card.is-false:hover { border-color: #ef4444; }
+.tf-card.is-false.active { border-color: #ef4444; background-color: #fef2f2; }
+.tf-card.is-false.active .icon-box { background-color: #ef4444; }
+.tf-card.is-false.active .tf-text { color: #dc2626; }
+*/
 </style>

@@ -1,7 +1,7 @@
 // src/api/quiz.js
 
 // 读取 .env 中的配置，如果未配置则回退到 localhost
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
 /**
  * 通用请求客户端
