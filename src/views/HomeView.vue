@@ -5,9 +5,10 @@ import { useSubjectStore } from '../stores/subject'
 import {
   ArrowRight,
   Search,
-  Trophy,
-  Zap,
-  Cpu
+  DataBoard,
+  TrendCharts,
+  Medal,
+  Trophy
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -16,19 +17,20 @@ const subjectStore = useSubjectStore()
 // --- 状态 ---
 const form = ref({
   subject: '',
-  difficulty: 'B', // 默认 B
+  difficulty: 'B',
   limit: 10
 })
+const searchQuery = ref('')
 
-// --- 选项配置 ---
+// --- 选项配置 (带视觉主题色) ---
 const difficulties = [
-  { value: 'A', label: 'Basic', desc: '基础概念' },
-  { value: 'B', label: 'Advanced', desc: '进阶应用' },
-  { value: 'C', label: 'Expert', desc: '复杂场景' },
-  { value: 'D', label: 'Master', desc: '极高难度' }
+  { value: 'A', label: '入门 Basic', desc: '筑基阶段', color: 'teal', icon: DataBoard },
+  { value: 'B', label: '进阶 Advanced', desc: '核心应用', color: 'blue', icon: TrendCharts },
+  { value: 'C', label: '专家 Expert', desc: '复杂挑战', color: 'indigo', icon: Medal },
+  { value: 'D', label: '大师 Master', desc: '极限场景', color: 'purple', icon: Trophy }
 ]
 
-const limitPresets = [5, 10, 20, 50]
+const limitPresets = [5, 10, 20, 30]
 
 // --- 生命周期 ---
 onMounted(() => {
@@ -38,7 +40,6 @@ onMounted(() => {
 // --- 交互逻辑 ---
 const handleStartQuiz = () => {
   if (!form.value.subject) return
-
   router.push({
     path: '/exam',
     query: {
@@ -49,127 +50,143 @@ const handleStartQuiz = () => {
   })
 }
 
-// 简单的搜索过滤（如果科目很多）
-const searchQuery = ref('')
+// 科目过滤与选择
 const filteredSubjects = computed(() => {
   const q = searchQuery.value.toLowerCase()
-  return subjectStore.subjects.filter(s => s.toLowerCase().includes(q))
+  // 简单的字母映射作为图标占位符
+  return subjectStore.subjects
+    .filter(s => s.toLowerCase().includes(q))
+    .map(s => ({ name: s, avatar: s.charAt(0).toUpperCase() }))
 })
 
-const selectSubject = (sub) => {
-  form.value.subject = sub
+const selectSubject = (subName) => {
+  form.value.subject = subName
 }
+
+// 获取当前难度的颜色主题
+const currentDifficultyTheme = computed(() => {
+  return difficulties.find(d => d.value === form.value.difficulty)?.color || 'blue'
+})
 </script>
 
 <template>
-  <div class="saas-container">
+  <div class="premium-container">
+    <div class="ambient-blobs">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+    </div>
+
     <div class="content-wrapper">
 
-      <header class="page-header">
-        <div class="header-badge">Quanta Quiz Engine</div>
-        <h1 class="title">Create your assessment</h1>
-        <p class="subtitle">配置参数以生成定制化的专项练习试卷。</p>
+      <header class="page-header animated-fade-down">
+        <h1>
+          <span class="gradient-text">Boson</span> Quiz Engine
+        </h1>
+        <p class="subtitle">构建您的专属知识挑战，探索智能评估的新维度。</p>
       </header>
 
-      <div class="bento-grid">
+      <div class="main-dashboard animated-fade-up">
 
-        <div class="bento-card subject-card">
-          <div class="card-header">
-            <h3>Select Subject</h3>
-            <div class="search-input-wrapper">
-              <el-icon><Search /></el-icon>
+        <section class="glass-panel subject-panel">
+          <div class="panel-header">
+            <h3>
+              <span class="icon-wrapper"><el-icon><Search /></el-icon></span>
+              选择目标题库
+            </h3>
+            <div class="search-bar">
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Search topics..."
-                class="bare-input"
+                placeholder="搜索学科..."
+                class="glass-input"
               >
             </div>
           </div>
 
-          <div class="subject-list custom-scrollbar">
+          <div class="subject-wall custom-scrollbar">
             <div
               v-for="sub in filteredSubjects"
-              :key="sub"
-              class="subject-item"
-              :class="{ active: form.subject === sub }"
-              @click="selectSubject(sub)"
+              :key="sub.name"
+              class="subject-chip glass-card"
+              :class="{ active: form.subject === sub.name }"
+              @click="selectSubject(sub.name)"
             >
-              <div class="subject-icon">
-                <el-icon><Cpu /></el-icon>
-              </div>
-              <span class="subject-name">{{ sub }}</span>
-              <div class="check-mark" v-if="form.subject === sub">
-                <div class="dot"></div>
-              </div>
+              <div class="chip-avatar">{{ sub.avatar }}</div>
+              <span class="chip-name">{{ sub.name }}</span>
+              <div class="active-glow"></div>
             </div>
 
-            <div v-if="filteredSubjects.length === 0" class="empty-state">
-              No subjects found.
+            <div v-if="filteredSubjects.length === 0 && !subjectStore.isLoading" class="empty-state">
+              暂无匹配的学科
+            </div>
+            <div v-if="subjectStore.isLoading" class="loading-state">
+              加载题库中...
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="grid-column">
+        <section class="config-console">
 
-          <div class="bento-card config-card">
-            <div class="card-header">
-              <h3>Difficulty</h3>
-              <span class="value-tag">{{ form.difficulty }}</span>
+          <div class="glass-panel config-panel">
+            <div class="panel-header">
+              <h3>难度等级设定</h3>
             </div>
-            <div class="segmented-control">
-              <button
+            <div class="difficulty-grid">
+              <div
                 v-for="diff in difficulties"
                 :key="diff.value"
-                class="segment-btn"
-                :class="{ active: form.difficulty === diff.value }"
+                class="diff-card glass-card"
+                :class="[diff.color, { active: form.difficulty === diff.value }]"
                 @click="form.difficulty = diff.value"
               >
-                <span class="seg-label">{{ diff.label }}</span>
-                <span class="seg-desc">{{ diff.desc }}</span>
-              </button>
+                <div class="diff-icon">
+                  <el-icon><component :is="diff.icon" /></el-icon>
+                </div>
+                <div class="diff-info">
+                  <div class="diff-label">{{ diff.label }}</div>
+                  <div class="diff-desc">{{ diff.desc }}</div>
+                </div>
+                <div class="selection-ring"></div>
+              </div>
             </div>
           </div>
 
-          <div class="bento-card config-card">
-            <div class="card-header">
-              <h3>Question Limit</h3>
-              <span class="value-tag">{{ form.limit }} Qs</span>
-            </div>
-            <div class="limit-selector">
-              <div class="limit-presets">
-                <button
-                  v-for="num in limitPresets"
-                  :key="num"
-                  class="preset-btn"
-                  :class="{ active: form.limit === num }"
-                  @click="form.limit = num"
-                >
-                  {{ num }}
-                </button>
-              </div>
-              <div class="custom-limit">
+          <div class="glass-panel config-panel footer-panel" :class="currentDifficultyTheme + '-theme'">
+            <div class="limit-section">
+              <label>生成题量</label>
+              <div class="limit-controls">
+                <div class="presets">
+                    <span
+                      v-for="num in limitPresets"
+                      :key="num"
+                      class="preset-tag"
+                      :class="{ active: form.limit === num }"
+                      @click="form.limit = num"
+                    >{{ num }}</span>
+                </div>
                 <input
                   v-model.number="form.limit"
                   type="number"
-                  min="1"
-                  max="50"
-                  class="limit-input"
+                  min="1" max="50"
+                  class="glass-input limit-input"
                 >
               </div>
             </div>
+
+            <button
+              class="start-btn magnetic-effect"
+              :disabled="!form.subject"
+              @click="handleStartQuiz"
+            >
+              <span class="btn-content">
+                开始生成试卷
+                <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+              </span>
+              <div class="btn-glow"></div>
+            </button>
           </div>
 
-          <button
-            class="start-button"
-            :disabled="!form.subject"
-            @click="handleStartQuiz"
-          >
-            <span class="btn-text">Generate Quiz</span>
-            <el-icon><ArrowRight /></el-icon>
-          </button>
-
-        </div>
+        </section>
       </div>
 
     </div>
@@ -177,385 +194,419 @@ const selectSubject = (sub) => {
 </template>
 
 <style scoped>
-/* --- Modern SaaS Design Tokens --- */
+/* --- Design System Theme --- */
 :root {
-  --bg-app: #FAFAFA;       /* 极浅的灰白背景 */
-  --bg-card: #FFFFFF;
-  --text-primary: #18181B; /* Zinc 900 */
-  --text-secondary: #71717A; /* Zinc 500 */
-  --text-tertiary: #A1A1AA;
-  --border-subtle: #E4E4E7; /* Zinc 200 */
-  --border-hover: #D4D4D8;
-  --primary-brand: #000000; /* Vercel style Black */
-  --primary-hover: #27272A;
-  --accent-blue: #3B82F6;
-  --radius-xl: 24px;
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --bg-app: #F0F2F5;
+  --text-primary: #2D3748;
+  --text-secondary: #718096;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  --blur-strength: 20px;
+
+  /* Theme Colors */
+  --color-teal: #38B2AC;
+  --color-blue: #4299E1;
+  --color-indigo: #667EEA;
+  --color-purple: #9F7AEA;
+  --primary-gradient: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
 }
 
-.saas-container {
-  min-height: calc(100vh - 64px); /* 减去导航栏高度 */
+.premium-container {
+  min-height: calc(100vh - 60px);
   background-color: var(--bg-app);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
+  background-image: linear-gradient(to bottom right, #F0F2F5, #E6E9F0);
+  position: relative;
+  overflow: hidden;
   padding: 40px 20px;
-  display: flex;
-  justify-content: center;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- Ambient Background Effects --- */
+.ambient-blobs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+.blob {
+  position: absolute;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: moveBlob 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+.blob-1 {
+  top: -10%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: var(--color-blue);
+  animation-delay: -5s;
+}
+.blob-2 {
+  bottom: -20%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: var(--color-purple);
+}
+
+@keyframes moveBlob {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(100px, 50px) scale(1.1); }
 }
 
 .content-wrapper {
-  width: 100%;
-  max-width: 1000px;
-  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 10;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-/* --- Header --- */
+/* --- Typography & Header --- */
 .page-header {
-  margin-bottom: 40px;
   text-align: center;
+  margin-bottom: 50px;
 }
-
-.header-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #F4F4F5;
-  border: 1px solid #E4E4E7;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.title {
+.page-header h1 {
   font-size: 3rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  color: var(--text-primary);
   margin: 0 0 12px 0;
-  background: linear-gradient(to bottom, #000, #444);
+  letter-spacing: -0.02em;
+}
+.gradient-text {
+  background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-
 .subtitle {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: var(--text-secondary);
-  margin: 0;
+  font-weight: 500;
 }
 
-/* --- Bento Grid Layout --- */
-.bento-grid {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr; /* 左宽右窄 */
-  gap: 20px;
+/* --- Glassmorphism Components --- */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-strength));
+  -webkit-backdrop-filter: blur(var(--blur-strength));
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--glass-shadow);
+  padding: 28px;
 }
 
-@media (max-width: 768px) {
-  .bento-grid {
-    grid-template-columns: 1fr;
-  }
+.glass-card {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.grid-column {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* --- Card Common Styles --- */
-.bento-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: 24px;
-  box-shadow: var(--shadow-card);
+.glass-input {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 10px 16px;
+  border-radius: 12px;
+  outline: none;
+  font-size: 0.95rem;
+  color: var(--text-primary);
   transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
+}
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
 }
 
-.bento-card:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-hover);
-}
-
-.card-header {
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
-
-.card-header h3 {
-  font-size: 1rem;
-  font-weight: 600;
+.panel-header h3 {
   margin: 0;
-}
-
-.value-tag {
-  background: #F4F4F5;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* --- Subject Card (Left) --- */
-.subject-card {
-  height: 520px; /* 固定高度以允许滚动 */
-}
-
-.search-input-wrapper {
+  font-size: 1.1rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #F4F4F5;
-  padding: 6px 12px;
-  border-radius: 8px;
-  width: 200px;
-  transition: width 0.2s ease;
-}
-
-.search-input-wrapper:focus-within {
-  background: #fff;
-  box-shadow: 0 0 0 2px var(--primary-brand);
-}
-
-.bare-input {
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 0.9rem;
-  width: 100%;
+  gap: 10px;
   color: var(--text-primary);
 }
-
-.subject-list {
-  flex: 1;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-  padding-right: 4px;
+.icon-wrapper {
+  display: flex;
+  padding: 8px;
+  background: rgba(66, 153, 225, 0.1);
+  color: var(--color-blue);
+  border-radius: 10px;
 }
 
-.subject-item {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
+/* --- Main Dashboard Layout --- */
+.main-dashboard {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .main-dashboard { grid-template-columns: 1fr; }
+}
+
+/* --- Subject Wall (Left) --- */
+.subject-panel {
+  min-height: 550px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+}
+.search-bar .glass-input {
+  width: 220px;
+}
+.subject-wall {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+  align-content: flex-start;
+  overflow-y: auto;
+  padding: 4px; /* Prevent shadow clipping */
+}
+
+.subject-chip {
+  padding: 10px 16px 10px 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
   position: relative;
+  overflow: hidden;
 }
-
-.subject-item:hover {
-  border-color: var(--text-tertiary);
-  background: #FAFAFA;
+.subject-chip:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.05);
 }
-
-.subject-item.active {
-  border-color: var(--primary-brand);
-  background: #F9FAFB;
-  box-shadow: 0 0 0 1px var(--primary-brand);
-}
-
-.subject-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #F4F4F5;
+.chip-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--primary-gradient);
+  color: white;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-
-.subject-item.active .subject-icon {
-  background: var(--primary-brand);
-  color: #fff;
-}
-
-.subject-name {
-  font-weight: 500;
+.chip-name {
+  font-weight: 600;
   font-size: 0.95rem;
 }
 
-.check-mark {
+.subject-chip.active {
+  background: white;
+  border-color: var(--color-indigo);
+}
+.active-glow {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--primary-brand);
-  border-radius: 50%;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.subject-chip.active .active-glow {
+  opacity: 1;
+}
+
+/* --- Config Console (Right) --- */
+.config-console {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Difficulty Grid */
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.diff-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+  border-width: 2px;
+}
+.diff-card:hover {
+  transform: scale(1.03);
+}
+
+/* Difficulty Color Themes */
+.diff-card.teal { --theme-color: var(--color-teal); }
+.diff-card.blue { --theme-color: var(--color-blue); }
+.diff-card.indigo { --theme-color: var(--color-indigo); }
+.diff-card.purple { --theme-color: var(--color-purple); }
+
+.diff-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.4rem;
+  color: var(--theme-color);
+  transition: all 0.3s ease;
 }
-
-.check-mark .dot {
-  width: 8px;
-  height: 8px;
-  background: var(--primary-brand);
-  border-radius: 50%;
-}
-
-/* --- Right Column Controls --- */
-
-/* Segmented Control for Difficulty */
-.segmented-control {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.segment-btn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border: 1px solid transparent;
-  background: #F4F4F5;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-}
-
-.segment-btn:hover {
-  background: #E4E4E7;
-}
-
-.segment-btn.active {
-  background: #fff;
-  border-color: var(--primary-brand);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.seg-label {
-  font-weight: 600;
-  font-size: 0.9rem;
+.diff-label {
+  font-weight: 700;
+  font-size: 1rem;
   color: var(--text-primary);
 }
-
-.seg-desc {
+.diff-desc {
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
-/* Limit Selector */
-.limit-selector {
+.diff-card.active {
+  background: white;
+  border-color: var(--theme-color);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05), 0 0 0 4px rgba(var(--theme-color-rgb), 0.1);
+}
+.diff-card.active .diff-icon {
+  background: var(--theme-color);
+  color: white;
+  box-shadow: 0 4px 10px rgba(var(--theme-color-rgb), 0.3);
+}
+
+/* Footer Panel & Controls */
+.footer-panel {
   display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: all 0.3s ease;
+}
+/* 根据选择的难度改变底部面板的强调色光晕 */
+.footer-panel.teal-theme { box-shadow: 0 8px 32px rgba(56, 178, 172, 0.15); }
+.footer-panel.blue-theme { box-shadow: 0 8px 32px rgba(66, 153, 225, 0.15); }
+.footer-panel.indigo-theme { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15); }
+.footer-panel.purple-theme { box-shadow: 0 8px 32px rgba(159, 122, 234, 0.15); }
+
+.limit-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.limit-section label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.limit-controls {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
-
-.limit-presets {
+.presets {
   display: flex;
-  gap: 8px;
-  flex: 1;
+  background: rgba(255,255,255,0.4);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.5);
 }
-
-.preset-btn {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid var(--border-subtle);
-  background: #fff;
-  border-radius: var(--radius-sm);
+.preset-tag {
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
-
-.preset-btn:hover {
-  border-color: var(--text-tertiary);
+.preset-tag.active {
+  background: white;
+  color: var(--color-indigo);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
-
-.preset-btn.active {
-  background: var(--primary-brand);
-  color: #fff;
-  border-color: var(--primary-brand);
-}
-
 .limit-input {
-  width: 60px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  width: 70px;
   text-align: center;
-  font-weight: 600;
-  outline: none;
-}
-.limit-input:focus {
-  border-color: var(--primary-brand);
+  font-weight: 700;
 }
 
-/* Start Button */
-.start-button {
-  height: 64px;
+/* Start Button (Hero Element) */
+.start-btn {
+  position: relative;
   border: none;
-  background: var(--primary-brand);
-  color: #fff;
-  border-radius: var(--radius-xl);
-  font-size: 1.1rem;
-  font-weight: 600;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--primary-gradient);
+  overflow: hidden;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-content {
+  position: relative;
+  z-index: 2;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-
-.start-button:hover:not(:disabled) {
+.btn-glow {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+  z-index: 1;
+}
+.start-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  background: var(--primary-hover);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.5);
 }
-
-.start-button:disabled {
-  opacity: 0.5;
+.start-btn:hover .btn-glow {
+  transform: translateX(100%);
+}
+.start-btn:disabled {
+  opacity: 0.6;
+  filter: grayscale(0.5);
   cursor: not-allowed;
-  transform: none;
 }
 
-/* Scrollbar Utility */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #E4E4E7;
-  border-radius: 20px;
-}
-.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: #D4D4D8;
+/* --- Utilities & Animations --- */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 20px; }
+
+.empty-state, .loading-state {
+  width: 100%;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
-/* Animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+.animated-fade-down { animation: fadeDown 0.8s ease-out; }
+.animated-fade-up { animation: fadeUp 0.8s ease-out 0.2s backwards; }
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px;
-  color: var(--text-secondary);
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
