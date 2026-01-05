@@ -1,11 +1,9 @@
 <script setup>
 defineProps({
-  // 接收完整的题目对象
   question: {
     type: Object,
     required: true
   },
-  // 双向绑定用户的答案
   modelValue: {
     type: String,
     default: ''
@@ -19,73 +17,71 @@ const handleSelect = (optionId) => {
 </script>
 
 <template>
-  <div class="single-choice-wrapper">
-
-    <div class="question-stem">
+  <div class="single-choice">
+    <div class="stem">
       {{ question.content.text }}
     </div>
 
-    <div class="options-list">
+    <div class="options-group">
       <div
         v-for="opt in question.structure.options"
         :key="opt.id"
-        class="option-item"
+        class="option-card"
         :class="{ active: modelValue === opt.id }"
         @click="handleSelect(opt.id)"
       >
-        <div class="opt-key">{{ opt.id.split('_').pop() }}</div> <div class="opt-text">{{ opt.text }}</div>
+        <div class="opt-key">{{ opt.id.split('_').pop() }}</div>
+        <div class="opt-content">{{ opt.text }}</div>
 
         <div class="radio-indicator"></div>
       </div>
     </div>
-
   </div>
 </template>
 
 <style scoped>
-.question-stem {
+.stem {
   font-size: 1.1rem;
   font-weight: 500;
-  color: #18181B; /* Zinc 900 */
+  color: var(--text-main);
   margin-bottom: 24px;
   line-height: 1.6;
 }
 
-.options-list {
+.options-group {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.option-item {
+.option-card {
   display: flex;
   align-items: center;
   padding: 16px 20px;
-  border: 1px solid #E4E4E7; /* Zinc 200 */
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  background-color: #fff;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-  position: relative;
+  background-color: var(--bg-surface);
+  transition: all 0.2s ease;
 }
 
-.option-item:hover {
-  background-color: #FAFAFA;
-  border-color: #D4D4D8;
+.option-card:hover {
+  background-color: var(--bg-surface-alt);
+  border-color: var(--border-hover);
 }
 
-.option-item.active {
-  border-color: #3B82F6; /* Blue 500 */
-  background-color: #EFF6FF; /* Blue 50 */
-  box-shadow: 0 0 0 1px #3B82F6 inset;
+.option-card.active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
 .opt-key {
   width: 28px;
   height: 28px;
-  background: #F4F4F5;
-  color: #71717A;
-  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,39 +91,42 @@ const handleSelect = (optionId) => {
   transition: all 0.2s;
 }
 
-.option-item.active .opt-key {
-  background: #3B82F6;
+.option-card.active .opt-key {
+  background: var(--color-primary);
   color: white;
 }
 
-.opt-text {
+.opt-content {
   flex: 1;
   font-size: 1rem;
-  color: #3F3F46;
+  color: var(--text-regular);
 }
-.option-item.active .opt-text {
-  color: #18181B;
+.option-card.active .opt-content {
+  color: var(--color-primary-hover);
   font-weight: 500;
 }
 
-/* Radio Circle UI */
+/* Radio UI */
 .radio-indicator {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid #D4D4D8;
+  border: 2px solid var(--border-hover);
   position: relative;
+  transition: all 0.2s;
 }
-.option-item.active .radio-indicator {
-  border-color: #3B82F6;
+
+.option-card.active .radio-indicator {
+  border-color: var(--color-primary);
 }
-.option-item.active .radio-indicator::after {
+
+.option-card.active .radio-indicator::after {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   width: 10px; height: 10px;
-  background: #3B82F6;
+  background: var(--color-primary);
   border-radius: 50%;
 }
 </style>

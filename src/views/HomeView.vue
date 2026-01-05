@@ -4,56 +4,56 @@ import { useRouter } from 'vue-router'
 import { useSubjectStore } from '../stores/subject'
 import {
   Search,
-  VideoPlay,
-  Trophy,
-  DataAnalysis,
-  Timer,
-  Collection
+  VideoPlay
 } from '@element-plus/icons-vue'
+// 引入常量配置
+import { DIFFICULTY_MAP, DEFAULT_LIMIT_PRESETS } from '../constants'
 
 const router = useRouter()
 const subjectStore = useSubjectStore()
 
-// --- 状态管理 ---
+// --- 状态 ---
 const form = ref({
   subject: '',
-  difficulty: 'B',
+  difficulty: 'B', // 默认 B
   limit: 10
 })
 const searchQuery = ref('')
 
-// --- 难度配置 (带直观的颜色和描述) ---
-const difficultyOptions = [
-  { value: 'A', label: '新手', sub: 'Basic', color: '#10B981', desc: '基础概念巩固' },    // Emerald
-  { value: 'B', label: '进阶', sub: 'Advanced', color: '#3B82F6', desc: '核心知识应用' }, // Blue
-  { value: 'C', label: '挑战', sub: 'Hard', color: '#F59E0B', desc: '复杂场景分析' },     // Amber
-  { value: 'D', label: '噩梦', sub: 'Expert', color: '#EF4444', desc: '极限边界情况' }    // Red
-]
-
-const limitPresets = [5, 10, 15, 20, 50]
+// 将常量对象转换为数组供 v-for 使用
+const difficultyOptions = Object.values(DIFFICULTY_MAP)
+const limitPresets = DEFAULT_LIMIT_PRESETS
 
 // --- 生命周期 ---
 onMounted(() => {
   subjectStore.initData()
 })
 
-// --- 逻辑处理 ---
+// --- 计算属性 ---
+
+// 1. 科目搜索过滤
 const filteredSubjects = computed(() => {
   const q = searchQuery.value.toLowerCase()
-  return subjectStore.subjects.filter(s => s.toLowerCase().includes(q))
+  return subjectStore.subjects
+    .filter(s => s.toLowerCase().includes(q))
+    .map(s => ({
+      name: s,
+      avatar: s.charAt(0).toUpperCase()
+    }))
 })
 
-// 根据当前难度获取对应颜色，用于按钮等动态样式
-const currentThemeColor = computed(() => {
-  const diff = difficultyOptions.find(d => d.value === form.value.difficulty)
-  return diff ? diff.color : '#3B82F6'
+// 2. 获取当前选中难度的配置对象（用于动态样式）
+const currentDiffConfig = computed(() => {
+  return DIFFICULTY_MAP[form.value.difficulty] || DIFFICULTY_MAP['B']
 })
 
-const selectSubject = (sub) => {
-  form.value.subject = sub
+// --- 动作 ---
+
+const selectSubject = (subName) => {
+  form.value.subject = subName
 }
 
-const handleStart = () => {
+const handleStartQuiz = () => {
   if (!form.value.subject) return
   router.push({
     path: '/exam',
@@ -70,527 +70,409 @@ const handleStart = () => {
   <div class="app-container">
     <div class="bg-decoration"></div>
 
-    <div class="main-content">
+    <div class="content-wrapper">
 
-      <header class="header-section">
-        <h1>开始你的练习</h1>
-        <p>选择科目与难度，定制专属试卷</p>
+      <header class="page-header">
+        <h1>
+          <span class="gradient-text">Boson</span> Quiz Engine
+        </h1>
+        <p class="subtitle">构建您的专属知识挑战，探索智能评估的新维度。</p>
       </header>
 
-      <div class="dashboard-card">
+      <div class="main-dashboard">
 
-        <div class="left-panel">
+        <section class="panel subject-panel">
           <div class="panel-header">
-            <h3><el-icon><Collection /></el-icon> 目标题库</h3>
-            <div class="search-box">
-              <el-icon class="search-icon"><Search /></el-icon>
+            <h3>
+              <el-icon><Search /></el-icon> 选择目标题库
+            </h3>
+            <div class="search-bar">
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="搜索科目..."
-              />
+                placeholder="搜索学科..."
+              >
             </div>
           </div>
 
-          <div class="subject-grid custom-scroll">
+          <div class="subject-wall custom-scrollbar">
             <div
               v-for="sub in filteredSubjects"
-              :key="sub"
-              class="subject-item"
-              :class="{ active: form.subject === sub }"
-              @click="selectSubject(sub)"
+              :key="sub.name"
+              class="subject-chip"
+              :class="{ active: form.subject === sub.name }"
+              @click="selectSubject(sub.name)"
             >
-              <div class="subject-avatar">
-                {{ sub.charAt(0).toUpperCase() }}
-              </div>
-              <div class="subject-info">
-                <span class="name">{{ sub }}</span>
-                <span class="status" v-if="form.subject === sub">已选中</span>
-                <span class="status hint" v-else>点击选择</span>
-              </div>
-              <div class="check-mark" v-if="form.subject === sub">✓</div>
+              <div class="chip-avatar">{{ sub.avatar }}</div>
+              <span class="chip-name">{{ sub.name }}</span>
+              <div class="active-indicator" v-if="form.subject === sub.name"></div>
             </div>
 
-            <div v-if="filteredSubjects.length === 0" class="empty-state">
-              未找到相关科目
+            <div v-if="filteredSubjects.length === 0 && !subjectStore.isLoading" class="empty-state">
+              暂无匹配的学科
+            </div>
+            <div v-if="subjectStore.isLoading" class="loading-state">
+              加载题库中...
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="right-panel">
+        <section class="config-console">
 
-          <div class="config-section">
-            <label><el-icon><Trophy /></el-icon> 难度等级</label>
-            <div class="difficulty-list">
+          <div class="panel config-panel">
+            <div class="panel-header">
+              <h3>难度等级</h3>
+            </div>
+            <div class="difficulty-grid">
               <div
-                v-for="opt in difficultyOptions"
-                :key="opt.value"
-                class="diff-option"
-                :class="{ active: form.difficulty === opt.value }"
-                :style="form.difficulty === opt.value ? { borderColor: opt.color, backgroundColor: `${opt.color}10` } : {}"
-                @click="form.difficulty = opt.value"
+                v-for="diff in difficultyOptions"
+                :key="diff.value"
+                class="diff-card"
+                :class="{ active: form.difficulty === diff.value }"
+                @click="form.difficulty = diff.value"
+                :style="{
+                  '--theme-color': diff.color,
+                  '--theme-bg': diff.bg
+                }"
               >
-                <div class="diff-radio" :style="{ borderColor: form.difficulty === opt.value ? opt.color : '#cbd5e1' }">
-                  <div class="dot" :style="{ backgroundColor: opt.color }" v-show="form.difficulty === opt.value"></div>
+                <div class="diff-icon">
+                  <el-icon><component :is="diff.icon" /></el-icon>
                 </div>
-                <div class="diff-content">
-                  <div class="diff-title" :style="{ color: form.difficulty === opt.value ? opt.color : '' }">
-                    {{ opt.label }} <span class="sub-text">{{ opt.sub }}</span>
+                <div class="diff-info">
+                  <div class="diff-label">
+                    {{ diff.label }} <span class="sub">{{ diff.sub }}</span>
                   </div>
-                  <div class="diff-desc">{{ opt.desc }}</div>
+                  <div class="diff-desc">{{ diff.desc }}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="config-section">
-            <label><el-icon><DataAnalysis /></el-icon> 题目数量</label>
-            <div class="limit-selector">
-              <div class="slider-wrapper">
+          <div class="panel footer-panel">
+            <div class="limit-section">
+              <label>生成题量</label>
+              <div class="limit-controls">
+                <div class="presets">
+                    <span
+                      v-for="num in limitPresets"
+                      :key="num"
+                      class="preset-tag"
+                      :class="{ active: form.limit === num }"
+                      @click="form.limit = num"
+                    >{{ num }}</span>
+                </div>
                 <input
-                  type="range"
                   v-model.number="form.limit"
-                  min="5" max="50" step="5"
-                  class="range-slider"
-                  :style="{ accentColor: currentThemeColor }"
-                />
-                <div class="slider-value">{{ form.limit }} 题</div>
-              </div>
-              <div class="preset-chips">
-                <span
-                  v-for="n in limitPresets"
-                  :key="n"
-                  class="chip"
-                  :class="{ active: form.limit === n }"
-                  @click="form.limit = n"
-                >{{ n }}</span>
+                  type="number"
+                  min="1" max="50"
+                  class="limit-input"
+                >
               </div>
             </div>
-          </div>
 
-          <div class="action-area">
             <button
               class="start-btn"
               :disabled="!form.subject"
-              :style="{ backgroundColor: !form.subject ? '#94a3b8' : currentThemeColor }"
-              @click="handleStart"
+              @click="handleStartQuiz"
+              :style="{ background: currentDiffConfig.color }"
             >
-              <span v-if="!form.subject">请先选择科目</span>
-              <span v-else class="btn-text">
-                开始测验 <el-icon><VideoPlay /></el-icon>
+              <span class="btn-content">
+                开始生成试卷
+                <el-icon class="el-icon--right"><VideoPlay /></el-icon>
               </span>
             </button>
           </div>
 
-        </div>
+        </section>
       </div>
+
     </div>
   </div>
 </template>
 
 <style scoped>
-/* --- 基础布局与背景 --- */
+/* 局部样式配合 main.css 使用 */
 .app-container {
   min-height: calc(100vh - 64px);
-  background-color: #F8FAFC; /* Slate 50 */
-  display: flex;
-  justify-content: center;
   padding: 40px 20px;
   position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #334155;
+  overflow: hidden;
+  background-color: var(--bg-page);
 }
 
 .bg-decoration {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 300px;
-  background: linear-gradient(135deg, #E0E7FF 0%, #F8FAFC 100%); /* Indigo tint */
+  top: -20%; left: -10%;
+  width: 50%; height: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  pointer-events: none;
   z-index: 0;
-  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
 }
 
-.main-content {
+.content-wrapper {
   position: relative;
   z-index: 10;
-  width: 100%;
   max-width: 1000px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  margin: 0 auto;
 }
 
-/* --- 头部 --- */
-.header-section h1 {
-  font-size: 2rem;
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.page-header h1 {
+  font-size: 2.5rem;
   font-weight: 800;
-  color: #1E293B;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.03em;
+  color: var(--text-main);
+  margin: 0 0 10px 0;
 }
-.header-section p {
-  color: #64748B;
-  font-size: 1.05rem;
-  margin: 0;
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
-
-/* --- 主卡片容器 --- */
-.dashboard-card {
-  background: #FFFFFF;
-  border-radius: 24px;
-  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0,0,0,0.03);
-  display: flex;
-  overflow: hidden;
-  min-height: 600px;
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
 }
 
-@media (max-width: 800px) {
-  .dashboard-card { flex-direction: column; }
-}
-
-/* --- 左侧面板 (Subject) --- */
-.left-panel {
-  flex: 3;
-  padding: 32px;
-  background-color: #fff;
-  border-right: 1px solid #F1F5F9;
-  display: flex;
-  flex-direction: column;
+.main-dashboard {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
   gap: 24px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .main-dashboard { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  padding: 24px;
+  box-shadow: var();
+  transition: transform 0.2s;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
 .panel-header h3 {
   margin: 0;
-  font-size: 1.1rem;
-  color: #0F172A;
+  font-size: 1.05rem;
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--text-main);
 }
 
-/* 搜索框 */
-.search-box {
-  position: relative;
-  width: 200px;
+/* --- Subject Panel --- */
+.subject-panel {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
 }
-.search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94A3B8;
-}
-.search-box input {
-  width: 100%;
-  padding: 8px 12px 8px 32px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  background: #F8FAFC;
+
+.search-bar input {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
   outline: none;
+  width: 180px;
   font-size: 0.9rem;
   transition: all 0.2s;
 }
-.search-box input:focus {
+.search-bar input:focus {
   background: #fff;
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-focus);
 }
 
-/* 学科网格列表 */
-.subject-grid {
+.subject-wall {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  grid-auto-rows: max-content;
-  gap: 16px;
-  overflow-y: auto;
-  padding: 4px;
-}
-
-.subject-item {
-  border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 16px;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  background: #fff;
+  align-content: flex-start;
+  overflow-y: auto;
+  max-height: 400px;
 }
 
-.subject-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border-color: #CBD5E1;
-}
-
-.subject-item.active {
-  border-color: #3B82F6;
-  background-color: #EFF6FF; /* Blue 50 */
-  box-shadow: 0 0 0 2px #3B82F6 inset;
-}
-
-.subject-avatar {
-  width: 44px;
-  height: 44px;
-  background: #F1F5F9;
-  color: #64748B;
-  border-radius: 12px;
+.subject-chip {
+  padding: 8px 16px 8px 8px;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1.2rem;
-  flex-shrink: 0;
+  gap: 10px;
+  cursor: pointer;
+  position: relative;
   transition: all 0.2s;
 }
 
-.subject-item.active .subject-avatar {
-  background: #3B82F6;
+.subject-chip:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.subject-chip.active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.chip-avatar {
+  width: 32px; height: 32px;
+  background: #fff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
+}
+.subject-chip.active .chip-avatar {
+  background: var(--color-primary);
   color: #fff;
 }
 
-.subject-info {
+.empty-state, .loading-state {
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* --- Difficulty Panel --- */
+.config-console {
   display: flex;
   flex-direction: column;
-}
-.subject-info .name {
-  font-weight: 600;
-  color: #1E293B;
-  font-size: 0.95rem;
-}
-.subject-info .status {
-  font-size: 0.75rem;
-  color: #3B82F6;
-  font-weight: 500;
-}
-.subject-info .hint {
-  color: #94A3B8;
-  opacity: 0;
-  transform: translateX(-5px);
-  transition: all 0.2s;
-}
-.subject-item:hover .hint {
-  opacity: 1;
-  transform: translateX(0);
+  gap: 24px;
 }
 
-.check-mark {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
-  background: #3B82F6;
-  color: white;
-  border-radius: 50%;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* --- 右侧面板 (Config) --- */
-.right-panel {
-  flex: 2;
-  background-color: #FAFAFA; /* Very light gray */
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.config-section label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: #334155;
-  margin-bottom: 16px;
-  font-size: 0.95rem;
-}
-
-/* 难度选项列表 */
-.difficulty-list {
-  display: flex;
-  flex-direction: column;
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.diff-option {
-  background: #fff;
-  border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.diff-card {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   cursor: pointer;
+  background: var(--bg-surface);
   transition: all 0.2s;
+  /* 使用 CSS 变量传递颜色 */
+  --local-color: var(--text-secondary);
 }
 
-.diff-option:hover {
-  border-color: #CBD5E1;
-  background-color: #fff;
+.diff-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-surface-alt);
 }
 
-.diff-radio {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid #CBD5E1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-.diff-radio .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.diff-card.active {
+  background: var();
+  border-color: var();
 }
 
-.diff-content {
-  display: flex;
-  flex-direction: column;
+.diff-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: var(); /* 始终显示已配置的颜色 */
 }
-.diff-title {
+
+.diff-label {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #1E293B;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+  color: var(--text-main);
 }
-.sub-text {
+.diff-label .sub {
   font-size: 0.75rem;
-  color: #94A3B8;
+  color: var(--text-secondary);
   font-weight: 400;
 }
 .diff-desc {
-  font-size: 0.8rem;
-  color: #64748B;
-  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 
-/* 题量选择 */
-.limit-selector {
-  background: #fff;
-  padding: 20px;
-  border-radius: 16px;
-  border: 1px solid #E2E8F0;
-}
-
-.slider-wrapper {
+/* --- Footer Panel --- */
+.limit-section {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
-.range-slider {
-  flex: 1;
-  cursor: pointer;
-  height: 6px;
-  background: #E2E8F0;
-  border-radius: 3px;
-  -webkit-appearance: none;
-}
-.range-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid currentColor; /* Takes accent-color */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-top: -6px; /* center it */
-}
-
-.slider-value {
-  font-weight: 700;
-  color: #1E293B;
-  min-width: 40px;
-  text-align: right;
-}
-
-.preset-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.chip {
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: #F1F5F9;
-  font-size: 0.8rem;
+.limit-section label {
   font-weight: 600;
-  color: #64748B;
+  color: var(--text-main);
+}
+
+.presets {
+  display: flex;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  gap: 4px;
+}
+.preset-tag {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
-.chip:hover { background: #E2E8F0; }
-.chip.active {
-  background: #1E293B;
-  color: white;
+.preset-tag:hover { color: var(--text-main); }
+.preset-tag.active {
+  background: #fff;
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
-/* 底部按钮 */
-.action-area {
-  margin-top: auto;
+.limit-input {
+  width: 60px;
+  margin-left: 12px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  outline: none;
 }
+.limit-input:focus { border-color: var(--color-primary); }
+
 .start-btn {
   width: 100%;
   padding: 16px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   color: white;
-  font-size: 1.1rem;
   font-weight: 700;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
 }
 .start-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
   filter: brightness(1.1);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 .start-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  opacity: 0.7;
+  background: var(--text-placeholder) !important;
 }
-.btn-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 滚动条美化 */
-.custom-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: #E2E8F0;
-  border-radius: 10px;
-}
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px;
-  color: #94A3B8;
+.btn-content {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 </style>

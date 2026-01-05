@@ -2,41 +2,37 @@
 import { computed } from 'vue'
 import {
   Trophy,
-  PriceTag// 用于题型图标
+  PriceTag
 } from '@element-plus/icons-vue'
+// 引入常量配置
+import { DIFFICULTY_MAP, QUESTION_TYPES } from '../constants'
 
 const props = defineProps({
-  // 只接收必要的元数据，不接收 content/structure
   index: {
     type: Number,
     required: true
   },
-  // 包含 type, difficulty, score 等
   meta: {
     type: Object,
     default: () => ({})
   }
 })
 
-// 难度样式映射
+// 1. 使用常量获取难度配置 (颜色、背景、Icon等)
 const difficultyConfig = computed(() => {
-  const map = {
-    'A': { color: '#10B981', bg: '#ECFDF5', label: 'Basic' },
-    'B': { color: '#3B82F6', bg: '#EFF6FF', label: 'Advanced' },
-    'C': { color: '#F59E0B', bg: '#FFFBEB', label: 'Hard' },
-    'D': { color: '#EF4444', bg: '#FEF2F2', label: 'Expert' }
-  }
-  return map[props.meta.difficulty] || map['B']
+  const diff = props.meta.difficulty
+  return DIFFICULTY_MAP[diff] || DIFFICULTY_MAP['B']
 })
 
-const typeName = computed(() => {
-  const types = {
-    'single_choice': '单选',
-    'multiple_choice': '多选',
-    'true_false': '判断',
-    'fill_blank': '填空'
+// 2. 使用常量获取题型名称
+const typeConfig = computed(() => {
+  const type = props.meta.type
+  // 提供默认值防止 undefined 报错
+  return QUESTION_TYPES[type] || {
+    label: '未知题型',
+    color: 'var(--text-secondary)',
+    borderColor: 'var(--border-color)'
   }
-  return types[props.meta.type] || '题目'
 })
 </script>
 
@@ -49,23 +45,33 @@ const typeName = computed(() => {
           <span class="prefix">Q</span>
           <span class="val">{{ String(index + 1).padStart(2, '0') }}</span>
         </div>
-        <div class="type-badge">
-          {{ typeName }}
+
+        <div
+          class="type-badge"
+          :style="{
+            color: typeConfig.color,
+            borderColor: typeConfig.color,
+            backgroundColor: 'var(--bg-surface)'
+          }"
+        >
+          {{ typeConfig.label }}
         </div>
       </div>
 
       <div class="header-right">
-        <div class="meta-pill"
-             :style="{ backgroundColor: difficultyConfig.bg, color: difficultyConfig.color }">
-          <el-icon>
-            <Trophy />
-          </el-icon>
+        <div
+          class="meta-pill"
+          :style="{
+            backgroundColor: difficultyConfig.bg,
+            color: difficultyConfig.color
+          }"
+        >
+          <el-icon><Trophy /></el-icon>
           <span>{{ difficultyConfig.label }}</span>
         </div>
+
         <div class="meta-pill score-pill">
-          <el-icon>
-            <PriceTag />
-          </el-icon>
+          <el-icon><PriceTag /></el-icon>
           <span>{{ meta.score || 1 }} 分</span>
         </div>
       </div>
@@ -82,25 +88,26 @@ const typeName = computed(() => {
 
 <style scoped>
 .question-container {
-  background: #FFFFFF;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #F1F5F9;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
 }
 
 .question-container:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  box-shadow: var(--shadow-float);
 }
 
 /* --- Header --- */
 .card-header {
   padding: 16px 24px;
-  background: #FAFAFA; /* Zinc 50 */
-  border-bottom: 1px solid #F1F5F9;
+  background: var(--bg-surface-alt);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -115,26 +122,23 @@ const typeName = computed(() => {
 .index-num {
   font-family: 'Monaco', 'Consolas', monospace;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--text-main);
   font-size: 1.2rem;
   display: flex;
   align-items: baseline;
 }
-
 .index-num .prefix {
   font-size: 0.8rem;
-  color: #94A3B8;
+  color: var(--text-secondary);
   margin-right: 2px;
 }
 
 .type-badge {
   font-size: 0.8rem;
   font-weight: 600;
-  background: #F4F4F5;
-  color: #52525B;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid #E4E4E7;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent; /* 颜色由内联样式控制 */
 }
 
 .header-right {
@@ -147,28 +151,36 @@ const typeName = computed(() => {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .score-pill {
-  background: #FFF7ED; /* Orange 50 */
-  color: #EA580C; /* Orange 600 */
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 /* --- Content Wrapper --- */
 .card-content-wrapper {
   padding: 32px;
-  /* 让插槽内容撑开高度 */
   flex: 1;
 }
 
 .empty-state {
-  color: #A1A1AA;
+  color: var(--text-placeholder);
   text-align: center;
   padding: 20px;
-  border: 2px dashed #E4E4E7;
-  border-radius: 8px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .card-header {
+    padding: 12px 16px;
+  }
+  .card-content-wrapper {
+    padding: 20px;
+  }
 }
 </style>

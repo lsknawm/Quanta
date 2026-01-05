@@ -1,0 +1,152 @@
+/* src/assets/main.css */
+
+:root {
+  /* --- 品牌色 (Brand Colors) --- */
+  --color-primary: #3B82F6;       /* Blue 500: 主按钮、选中状态 */
+  --color-primary-hover: #2563EB; /* Blue 600: 悬停状态 */
+  --color-primary-light: #EFF6FF; /* Blue 50: 浅色背景/高亮 */
+  --color-primary-focus: rgba(59, 130, 246, 0.4); /* 聚焦光环 */
+
+  /* --- 功能色 (Functional Colors) --- */
+  /* 对应难度 A / 成功 / 填空题 */
+  --color-success: #10B981;       /* Emerald 500 */
+  --color-success-bg: #ECFDF5;    /* Emerald 50 */
+
+  /* 对应难度 B / 信息 / 单选题 */
+  --color-info: #3B82F6;          /* Blue 500 */
+  --color-info-bg: #EFF6FF;       /* Blue 50 */
+
+  /* 对应难度 C / 警告 / 简答题 */
+  --color-warning: #F59E0B;       /* Amber 500 */
+  --color-warning-bg: #FFFBEB;    /* Amber 50 */
+
+  /* 对应难度 D / 错误 / 危险操作 */
+  --color-danger: #EF4444;        /* Red 500 */
+  --color-danger-bg: #FEF2F2;     /* Red 50 */
+
+  /* 简答题/特殊标签紫色 */
+  --color-purple: #8B5CF6;        /* Violet 500 */
+  --color-purple-bg: #F5F3FF;     /* Violet 50 */
+
+  /* --- 中性色 (Neutrals - Slate/Zinc) --- */
+  --bg-page: #F8FAFC;             /* 页面背景 */
+  --bg-surface: #FFFFFF;          /* 卡片背景 */
+  --bg-surface-alt: #FAFAFA;      /* 头部、次级背景 */
+  --bg-input: #F1F5F9;            /* 输入框背景 */
+
+  --text-main: #1E293B;           /* 标题、主要文字 */
+  --text-regular: #334155;        /* 正文 */
+  --text-secondary: #64748B;      /* 次要信息、描述 */
+  --text-placeholder: #94A3B8;    /* 占位符、禁用态 */
+
+  --border-color: #E2E8F0;        /* 默认边框 */
+  --border-hover: #CBD5E1;        /* 悬停边框 */
+
+  /* --- 阴影 (Shadows) --- */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
+
+  /* --- 圆角 (Radius) --- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* --- 字体 (Typography) --- */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* --- 基础重置 (Base Reset) --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-page);
+  color: var(--text-regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* --- 通用元素样式 (Common Elements) --- */
+
+/* 按钮基础 */
+button {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15;
+  margin: 0;
+  text-transform: none;
+  -webkit-appearance: button;
+}
+
+/* 链接基础 */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* 输入框基础优化 */
+input, textarea, select {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+/* 滚动条美化 (Custom Scrollbar) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94A3B8;
+}
+
+/* --- 通用动画 (Utility Animations) --- */
+
+/* 页面/卡片切换动画：向左平移淡出，淡入 */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* 简单的淡入淡出 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
